@@ -1,0 +1,18 @@
+
+# Dependencies
+node_modules/
+
+# Production build output
+dist/
+
+# mkcert dev certificates
+.cert/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+*.local

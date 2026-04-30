@@ -1,0 +1,56 @@
+# .github/workflows/deploy.yml
+# Builds and deploys Deceptive to the gh-pages branch on every push to main.
+# The custom domain (deceptive.robertvelardejr.com) is written to /dist/CNAME
+# automatically by the action via the `cname` parameter — no separate commit needed.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Allow triggering a manual deployment from the Actions tab
+  workflow_dispatch:
+
+# Grant the GITHUB_TOKEN just enough permission to push to gh-pages
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js setup ─────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install dependencies ──────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Run tests ─────────────────────────────────────────────────────
+      - name: Run unit tests
+        run: npm test
+
+      # ── 5. Production build ──────────────────────────────────────────────
+      - name: Build
+        run: npm run build
+
+      # ── 6. Deploy to gh-pages ────────────────────────────────────────────
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          # Writes a CNAME file into the published directory so GitHub Pages
+          # serves the site under the custom domain instead of the default
+          # *.github.io address.
+          cname: deceptive.robertvelardejr.com

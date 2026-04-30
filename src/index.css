@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #09090b;
+  color: #f4f4f5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Prevent iOS Safari from auto-zooming on input focus.
+   Safari zooms when a focused input's font-size is below 16px. Using
+   !important ensures this floor holds even when Tailwind utility classes
+   (e.g. text-sm = 14px) are present. */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Prevent double-tap zoom on interactive elements (iOS/Android). */
+button, a {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from auto-zooming on input focus.
+   Safari zooms when a focused input's font-size is below 16px. Using
+   !important ensures this floor holds even when Tailwind utility classes
+   (e.g. text-sm = 14px) are present. */
+input, textarea, select {
+  font-size: 16px !important;
+}
