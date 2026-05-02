@@ -453,73 +453,73 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
       </div>
 
       {/* Card only as big as the content, centered vertically */}
-      <div className="w-full max-w-sm flex flex-col gap-0 overflow-hidden flex-1 border-0 ">
+      <div className="w-full max-w-sm flex flex-col overflow-hidden flex-1">
 
         {/* Scrollable interior — relative wrapper enables the bottom-fade overlay */}
         <div className="relative flex-1 min-h-0">
-        <div className="flex flex-col gap-5 overflow-y-auto h-full p-0 pb-14 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex flex-col gap-5 overflow-y-auto h-full p-0 pb-14 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Role card — public roles shown immediately; secret roles need hold-to-reveal */}
-          {myAssignment && (
-            <div>
-              {myMeta?.publicRole ? (
-                <RoleCard assignment={myAssignment} module={module} state={state} />
-              ) : (
-                <RevealShield
-                  label="Hold to Reveal Your Role"
-                  onReveal={() => setRoleRevealed(true)}
-                  onConceal={() => setRoleRevealed(false)}
-                >
+            {/* Role card — public roles shown immediately; secret roles need hold-to-reveal */}
+            {myAssignment && (
+              <div>
+                {myMeta?.publicRole ? (
                   <RoleCard assignment={myAssignment} module={module} state={state} />
-                </RevealShield>
-              )}
-            </div>
-          )}
-
-          {/* Chameleon: word grid — always visible, highlights secret tile after role is revealed */}
-          {myAssignment?.wordGrid && (
-            <GlassCard className="p-4 flex flex-col gap-2">
-              <WordGrid
-                words={myAssignment.wordGrid}
-                seed={state.startingSeed ?? state.seed}
-                secretWord={roleRevealed ? myAssignment.word : undefined}
-                roleColor={module.constants.ROLE_COLORS?.[myAssignment.role]}
-              />
-            </GlassCard>
-          )}
-
-          {/* Wavelength: spectrum row — always visible; Psychics hold to reveal secret number */}
-          {myAssignment?.spectrum && (
-            <SpectrumReveal
-              spectrum={myAssignment.spectrum}
-              secretNumber={myAssignment.secretNumber}
-            />
-          )}
-
-          {/* Spyfall: scannable location reference list (visible to all players) */}
-          {myAssignment?.locationList?.length > 0 && (
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
-                Locations
-                <span className="ml-1.5 text-zinc-700 normal-case tracking-normal">
-                  {myAssignment.locationList.length} in play
-                </span>
-              </p>
-              <div className="grid grid-cols-2 gap-1">
-                {myAssignment.locationList.map((loc) => (
-                  <div
-                    key={loc}
-                    className="px-2.5 py-2 rounded-xl text-xs text-center font-medium text-zinc-400 bg-zinc-800/50 border border-white/[0.04]"
+                ) : (
+                  <RevealShield
+                    label="Hold to Reveal Your Role"
+                    onReveal={() => setRoleRevealed(true)}
+                    onConceal={() => setRoleRevealed(false)}
                   >
-                    {loc}
-                  </div>
-                ))}
+                    <RoleCard assignment={myAssignment} module={module} state={state} />
+                  </RevealShield>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-        {/* Bottom fade — fades the scroll area into the page background */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
+            )}
+
+            {/* Chameleon: word grid — always visible, highlights secret tile after role is revealed */}
+            {myAssignment?.wordGrid && (
+              <GlassCard className="p-4 flex flex-col gap-2">
+                <WordGrid
+                  words={myAssignment.wordGrid}
+                  seed={state.startingSeed ?? state.seed}
+                  secretWord={roleRevealed ? myAssignment.word : undefined}
+                  roleColor={module.constants.ROLE_COLORS?.[myAssignment.role]}
+                />
+              </GlassCard>
+            )}
+
+            {/* Wavelength: spectrum row — always visible; Psychics hold to reveal secret number */}
+            {myAssignment?.spectrum && (
+              <SpectrumReveal
+                spectrum={myAssignment.spectrum}
+                secretNumber={myAssignment.secretNumber}
+              />
+            )}
+
+            {/* Spyfall: scannable location reference list (visible to all players) */}
+            {myAssignment?.locationList?.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                  Locations
+                  <span className="ml-1.5 text-zinc-700 normal-case tracking-normal">
+                    {myAssignment.locationList.length} in play
+                  </span>
+                </p>
+                <div className="grid grid-cols-2 gap-1">
+                  {myAssignment.locationList.map((loc) => (
+                    <div
+                      key={loc}
+                      className="px-2.5 py-2 rounded-xl text-xs text-center font-medium text-zinc-400 bg-zinc-800/50 border border-white/[0.04]"
+                    >
+                      {loc}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Bottom fade — fades the scroll area into the page background */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
         </div>
 
         {/* ── Round timer — shown only for roles with showsTimer: true ─────── */}
@@ -559,7 +559,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
         )}
 
         {/* Nav buttons — always pinned at bottom of card */}
-        <div className="pt-2 border-t border-white/5 flex gap-2">
+        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm">
           <Button variant="secondary" size="md" className="flex-1 " onClick={handleBackToLobby}>
             ← Pre-Round
           </Button>

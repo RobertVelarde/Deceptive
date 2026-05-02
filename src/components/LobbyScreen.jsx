@@ -485,32 +485,28 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
         </div>
       </div>
 
-
-
-
       {/* ── Fixed footer: back button ─────────────────────────────────────── */}
       {onGoHome && (
-        <div className="w-full max-w-sm pt-2 pb-2 shrink-0">
+        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm pb-2">
+          <Button
+            variant="secondary" size="md" className="flex-1 "
+            onClick={onGoHome}
+          >
+            ← Back
+          </Button>
+
           {/* Create Lobby */}
           <Button
-            size="lg"
-            className="w-full py-3 rounded-2xl text-base font-bold active:scale-95 transition-all mb-2"
+            size="md" className="flex-1"
             onClick={onStart}
             disabled={!canStart || !customTilesFilled}
           >
             {!canStart
-              ? `Need ${module.minPlayers - state.players.length} more player(s)`
+              ? `Need ${module.minPlayers - state.players.length} more player${module.minPlayers - state.players.length === 1 ? '' : 's'}`
               : !customTilesFilled
-                ? `Need ${16 - customWords.length} more tile(s)`
-                : `Create Lobby · ${calculateChecksum(state)}`}
+                ? `Need ${16 - customWords.length} more tile${16 - customWords.length === 1 ? '' : 's'}`
+                : `Create Lobby  →`}
           </Button>
-
-          <button
-            className="w-full py-3 rounded-2xl text-base font-bold bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/60 hover:text-zinc-200 active:scale-95 transition-all"
-            onClick={onGoHome}
-          >
-            Back
-          </button>
         </div>
       )}
     </div>
