@@ -60,13 +60,20 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
     } catch { return window.location.href; }
   }, [state, module]);
 
-  const copyLink = useCallback(async () => {
-    try {
+const copyLink = useCallback(async () => {
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'Join my ' + module.displayName + ' game!',
+        url: shareUrl,
+      });
+    } else {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), COPY_CONFIRM_MS);
-    } catch { /* clipboard unavailable */ }
-  }, [shareUrl]);
+    }
+  } catch { /* user cancelled or clipboard unavailable */ }
+}, [shareUrl]);
 
   const openQr = useCallback(async () => {
     try {
@@ -322,14 +329,11 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
               height={256}
             />
           )}
-          <p className="text-xs text-zinc-500 text-center">
-            Scan with your phone camera to join this lobby
-          </p>
           <button
             onClick={copyLink}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors"
           >
-            {copied ? '✓ Copied!' : 'Copy Link'}
+            {copied ? '✓ Copied!' : 'Share Link'}
           </button>
         </div>
       </Modal>

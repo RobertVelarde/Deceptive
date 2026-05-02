@@ -17,10 +17,11 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
   const { colors } = useTheme();
   const [newName, setNewName] = useState('');
   const [newTile, setNewTile] = useState('');
-  const scrollRef       = useRef(null);
-  const inputRef        = useRef(null);
-  const tileInputRef    = useRef(null);
-  const inputFocused    = useRef(false);
+  const scrollRef         = useRef(null);
+  const gamemodeScrollRef = useRef(null);
+  const inputRef          = useRef(null);
+  const tileInputRef      = useRef(null);
+  const inputFocused      = useRef(false);
 
   // Keep scrolled to bottom whenever the player list grows and the input is active
   useEffect(() => {
@@ -28,6 +29,26 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' });
     }
   }, [state.players.length]);
+
+  // Center the active gamemode button in the horizontal scroll container
+useEffect(() => {
+  const container = gamemodeScrollRef.current;
+  if (!container) return;
+  const btn = container.querySelector(`[data-game="${state.gameType}"]`);
+  if (!btn) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+
+  const offset =
+    container.scrollLeft +
+    btnRect.left -
+    containerRect.left +
+    btnRect.width / 2 -
+    container.clientWidth / 2;
+
+  container.scrollTo({ left: offset, behavior: 'smooth' });
+}, [state.gameType]);
 
   const module = getModule(state.gameType);
 
@@ -86,10 +107,12 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Gamemode</p>
           
           {/* Added overflow-x-auto and flex-nowrap to allow horizontal scrolling */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+          <div ref={gamemodeScrollRef} className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-nowrap">
+            <div className="shrink-0 w-0" aria-hidden="true" />   {/* left spacer */}
             {Object.values(GAME_REGISTRY).map((m) => (
               <button
                 key={m.name}
+                data-game={m.name}
                 onClick={() => {
                   const extra = m.defaultState ? m.defaultState() : {};
                   push({ gameType: m.name, ...extra });
@@ -110,6 +133,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
                 </span>
               </button>
             ))}
+            <div className="shrink-0 w-0" aria-hidden="true" />   {/* right spacer */}
           </div>
         </GlassCard>
       </div>
