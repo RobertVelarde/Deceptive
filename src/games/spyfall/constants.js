@@ -20,21 +20,24 @@ export const SPYFALL_ROLE_COLORS = {
 
 export const SPYFALL_ROUND_SECONDS = 480; // 8 minutes
 
-// ROLE_META drives the generic GamePlayScreen timer — location display is
-// handled separately via assignment.locationList in GamePlayScreen.
+// ROLE_META drives the generic GamePlayScreen.
+//   locationReveal:         true  → render the hold-to-reveal location+role card
+//   locationRevealDisabled: true  → render the hold button in disabled/placeholder state
 export const SPYFALL_ROLE_META = {
   spy: {
-    label:       'SPY',
-    emoji:       '🕵️',
-    desc:        "You don't know the location. Blend in, answer vaguely, and avoid being caught!",
-    showsTimer:  true,
-    timerManual: true,
+    label:                  'SPY',
+    emoji:                  '🕵️',
+    desc:                   "You don't know the location. Blend in, answer vaguely, and avoid being caught!",
+    showsTimer:             true,
+    timerManual:            true,
+    locationRevealDisabled: true,  // button visible but non-interactive (screen-peek prevention)
   },
   civilian: {
-    label:       'CIVILIAN',
-    emoji:       '👤',
-    desc:        'You know the location. Give clues to expose the spy — without making it too obvious.',
-    showsTimer:  true,
-    timerManual: true,
+    label:          'CIVILIAN',
+    emoji:          '👤',
+    desc:           'You know the location. Give clues to expose the spy — without making it too obvious.',
+    showsTimer:     true,
+    timerManual:    true,
+    locationReveal: true,  // hold-to-reveal: shows secret location + assigned role
   },
 };

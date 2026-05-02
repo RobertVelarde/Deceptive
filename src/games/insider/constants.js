@@ -39,13 +39,15 @@ export const INSIDER_ROLE_META = {
     label:      'INSIDER',
     emoji:      '🕵️',
     desc:       'Ask questions that help lead to the secret word, but don\'t make it obvious that you know what it is!',
-    showsTimer: false,
+    showsTimer: true,
+    timerManual: true,
   },
   common:  {
     label:      'COMMON',
     emoji:      '🔍',
     desc:       'Ask yes/no questions to discover the secret word before time runs out, but also be mindful of who the insider might be!',
-    showsTimer: false,
+    showsTimer: true,
+    timerManual: true,
     wordSlot:   true,  // renders a placeholder so card height matches Insider's WordReveal
   },
 };

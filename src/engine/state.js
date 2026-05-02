@@ -3,7 +3,7 @@ import { ENVELOPE_VERSION } from './envelope';
 import { intToSeed, SEED_MAX, generateTimeSeed } from './prng';
 export { generatePlayerId } from './gamestate';
 
-/** Produce a blank lobby state with a freshly randomised starting seed. */
+/** Produce a blank lobby state with a freshly randomized starting seed. */
 export function createDefaultState() {
   const startingSeed = generateTimeSeed();
   return {

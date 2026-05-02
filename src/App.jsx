@@ -15,6 +15,13 @@ import { parseGameStateParam, buildGameStateParam, GAME_TYPE_IDS, GAME_TYPE_FROM
 import { createDefaultState }                               from './engine/state';
 import { getNextSeed, getPrevSeed }                      from './engine/seedNav';
 import { findCachedPlayer, saveLobbyCache }                 from './engine/lobbyCache';
+import {
+  readSession,
+  saveSession,
+  updateSession,
+  clearSession,
+  clearIdentityFromSession,
+}                                                           from './engine/sessionPersistence';
 import { LobbyScreen }                                      from './components/LobbyScreen';
 import { PreGameScreen }                                    from './components/PreGameScreen';
 import { GamePlayScreen }                                   from './components/GamePlayScreen';
@@ -37,8 +44,20 @@ export default function App() {
           if (mod?.decodeGameState) {
             const decoded = mod.decodeGameState(gamePayload);
             if (decoded?.players && Array.isArray(decoded.players)) {
-              const withStatus = { ...decoded, status: isLobby ? 'lobby' : 'pregame' };
-              return { ...withStatus, checksum: calculateChecksum(withStatus) };
+              // Merge with defaultState so fields not encoded in the URL (e.g. Chameleon
+              // roundSeconds) still get their defaults → consistent checksum across reloads.
+              const withDefaults = { ...(mod.defaultState?.() ?? {}), ...decoded };
+              const baseStatus   = isLobby ? 'lobby' : 'pregame';
+              const withStatus   = { ...withDefaults, status: baseStatus };
+              const withChecksum = { ...withStatus, checksum: calculateChecksum(withStatus) };
+              // Restore the exact screen the player was on before reloading
+              try {
+                const session = readSession();
+                if (session?.lobbyID === withChecksum.checksum && session?.currentScreen) {
+                  return { ...withChecksum, status: session.currentScreen };
+                }
+              } catch { /* ignore */ }
+              return withChecksum;
             }
           }
         }
@@ -78,6 +97,13 @@ export default function App() {
     } catch { /* encoding error — leave URL as-is */ }
   }, [state]);
 
+  // ── Persist identity so it survives page refreshes ────────────────────────
+  useEffect(() => {
+    if (identity) {
+      updateSession({ playerName: identity.name, playerId: identity.id });
+    }
+  }, [identity]);
+
   // ── Open identity picker whenever entering a game without a name ──────────
   useEffect(() => {
     const needsPicker = (state.status === 'pregame' || state.status === 'playing') && !identity;
@@ -91,7 +117,21 @@ export default function App() {
       setIdentityPickerOpen(true);
       return;
     }
-    // Auto-select from cache — skip the picker entirely
+    // Check persisted session first — survives refreshes and browser restarts
+    try {
+      const session = readSession();
+      if (session?.playerId || session?.playerName) {
+        const match = state.players.find(
+          (p) => p.id === session.playerId || p.name === session.playerName,
+        );
+        if (match) {
+          _setIdentity(match);
+          setIdentityPickerOpen(false);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+    // Fall back to lobby cache (cross-device, keyed by checksum)
     const cached = findCachedPlayer(state.checksum, state.players);
     if (cached) {
       _setIdentity(cached);
@@ -112,7 +152,14 @@ export default function App() {
   // ── Mutators ───────────────────────────────────────────────────────────────
   /** Recalculates checksum on every write so the URL hash is always current. */
   const setState = useCallback((next) => {
-    _setState({ ...next, checksum: calculateChecksum(next) });
+    const withChecksum = { ...next, checksum: calculateChecksum(next) };
+    // Persist current screen so a reload lands on the same page
+    if (next.status === 'home') {
+      clearSession();
+    } else {
+      updateSession({ currentScreen: next.status, lobbyID: withChecksum.checksum });
+    }
+    _setState(withChecksum);
   }, []);
 
   const setIdentity = useCallback((player) => { _setIdentity(player); }, []);
@@ -124,6 +171,7 @@ export default function App() {
 
   // Re-opens the identity picker so the player can change their name
   const handleChangeIdentity = useCallback(() => {
+    clearIdentityFromSession();
     forcePickerRef.current = true;
     setCachedPlayer(findCachedPlayer(state.checksum, state.players));
     _setIdentity(null);
@@ -148,6 +196,7 @@ export default function App() {
   }, [state, setState]);
 
   const handleCreateLobby = useCallback(() => {
+    updateSession({ isCreator: true });
     setState({ ...createDefaultState(), status: 'lobby' });
   }, [setState]);
 
@@ -162,8 +211,11 @@ export default function App() {
         const mod     = getModule(gameTypeName);
         const decoded = mod?.decodeGameState?.(gamePayload);
         if (!decoded?.players || !Array.isArray(decoded.players)) throw new Error('Invalid payload');
-        const withStatus = { ...decoded, status: isLobby ? 'lobby' : 'pregame' };
-        setState({ ...withStatus, checksum: calculateChecksum(withStatus) });
+        const withDefaults = { ...(mod.defaultState?.() ?? {}), ...decoded };
+        const withStatus = { ...withDefaults, status: isLobby ? 'lobby' : 'pregame' };
+        const joined = { ...withStatus, checksum: calculateChecksum(withStatus) };
+        updateSession({ isCreator: false });
+        setState(joined);
       } catch {
         setToast('Invalid QR code — could not join lobby');
       }
@@ -172,6 +224,7 @@ export default function App() {
 
   const handleGoHome = useCallback(() => {
     _setIdentity(null);
+    // clearSession() is called automatically by setState when status === 'home'
     setState({ ...createDefaultState(), status: 'home' });
   }, [setState]);
 

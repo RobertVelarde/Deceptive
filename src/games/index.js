@@ -3,14 +3,16 @@
 // To register a new game: import the module and add it to GAME_REGISTRY.
 // The App and all UI components resolve game-specific behaviour exclusively
 // through getModule() — no other file needs to know about individual games.
-import { InsiderModule }   from './insider/index';
-import { ChameleonModule } from './chameleon/index';
-import { SpyfallModule }   from './spyfall/index';
+import { InsiderModule }     from './insider/index';
+import { ChameleonModule }   from './chameleon/index';
+import { SpyfallModule }     from './spyfall/index';
+import { WavelengthModule }  from './wavelength/index';
 
 export const GAME_REGISTRY = {
-  insider:   InsiderModule,
-  chameleon: ChameleonModule,
-  spyfall:   SpyfallModule,
+  insider:    InsiderModule,
+  chameleon:  ChameleonModule,
+  spyfall:    SpyfallModule,
+  wavelength: WavelengthModule,
 };
 
 /** Resolve the active module by gameType; falls back to InsiderModule. */

@@ -12,7 +12,7 @@
 //   enabledLocations    {string[]}     subset of SPYFALL_LOCATIONS that are active
 import { createPRNG, deterministicShuffle } from '../../engine/prng';
 import { encodeSeed, decodeSeed, encodePlayers, decodePlayers } from '../../engine/gamestate';
-import { SPYFALL_LOCATIONS } from './locations';
+import { SPYFALL_LOCATIONS, SPYFALL_LOCATION_DATA } from './locations';
 import {
   SPYFALL_COLORS,
   SPYFALL_ROLES,
@@ -46,7 +46,13 @@ export const SpyfallModule = {
       randomizeSpies:     false,
       spiesKnowEachOther: false,
       enabledLocations:   [...SPYFALL_LOCATIONS],
+      roundSeconds:       480,
     };
+  },
+
+  /** Called by GamePlayScreen to get the timer duration. */
+  getTimerSeconds(state) {
+    return state?.roundSeconds ?? SPYFALL_ROUND_SECONDS;
   },
 
   // ── Compact binary state encoding (for ?gs= URL param) ────────────────────
@@ -60,11 +66,13 @@ export const SpyfallModule = {
   //   [2-4]  seed (big-endian uint24)
   //   [5-7]  startingSeed (big-endian uint24)
   //   [8-11] location bitmask (big-endian uint32; bit i = SPYFALL_LOCATIONS[i] enabled)
-  //   [12..] encoded player list (encodePlayers format)
+  //   [12]   roundMinutes - 1 (0-based, so 1-30 min fits in one byte)
+  //   [13..] encoded player list (encodePlayers format)
 
   encodeGameState({ players, seed, round, startingSeed,
                     spyCount = 1, randomizeSpies = false,
-                    spiesKnowEachOther = false, enabledLocations }) {
+                    spiesKnowEachOther = false, enabledLocations,
+                    roundSeconds = SPYFALL_ROUND_SECONDS }) {
     const seedBytes      = encodeSeed(seed);
     const startSeedBytes = encodeSeed(startingSeed ?? seed);
     const playerBytes    = encodePlayers(players);
@@ -79,7 +87,9 @@ export const SpyfallModule = {
       if (enabled.includes(SPYFALL_LOCATIONS[i])) locMask |= (1 << i);
     }
 
-    const buf = new Uint8Array(12 + playerBytes.length);
+    const roundMins = Math.max(1, Math.min(30, Math.round(roundSeconds / 60)));
+
+    const buf = new Uint8Array(13 + playerBytes.length);
     buf[0]  = (round - 1) & 0xFF;
     buf[1]  = settingsByte;
     buf[2]  = seedBytes[0];
@@ -92,7 +102,8 @@ export const SpyfallModule = {
     buf[9]  = (locMask >>> 16) & 0xFF;
     buf[10] = (locMask >>>  8) & 0xFF;
     buf[11] =  locMask         & 0xFF;
-    buf.set(playerBytes, 12);
+    buf[12] = (roundMins - 1) & 0xFF;
+    buf.set(playerBytes, 13);
     return buf;
   },
 
@@ -114,19 +125,21 @@ export const SpyfallModule = {
     ) >>> 0;
 
     const enabledLocations = SPYFALL_LOCATIONS.filter((_, i) => (locMask >>> i) & 1);
-    const { players } = decodePlayers(payload, 12);
+    // byte[12] is roundMinutes-1; if payload is shorter (old links) default to 8 min
+    const roundSeconds = payload.length > 12 ? ((payload[12] & 0xFF) + 1) * 60 : SPYFALL_ROUND_SECONDS;
+    const { players } = decodePlayers(payload, 13);
 
     return {
       gameType: 'spyfall',
       seed, startingSeed, round, players,
-      spyCount, randomizeSpies, spiesKnowEachOther, enabledLocations,
+      spyCount, randomizeSpies, spiesKnowEachOther, enabledLocations, roundSeconds,
       status:   'lobby',
       category: '',
     };
   },
 
   /**
-   * Deterministically assign Spy and Civilian roles.
+   * Deterministically assign Spy and Civilian roles (with unique location-specific roles).
    *
    * @param {object[]} players       — lobby player list
    * @param {string}   seedString    — 4-char base-36 seed
@@ -134,9 +147,10 @@ export const SpyfallModule = {
    * @param {object}   state         — full game state (carries spyfall settings)
    *
    * Assignment shape:
-   *   { playerId, playerName, role, location, locationList, fellowSpies, color }
+   *   { playerId, playerName, role, location, civilianRole, locationList, fellowSpies, color }
    *   — location:     null for spies; the secret location string for civilians
-   *   — locationList: all enabled locations (shown to both spy and civilian)
+   *   — civilianRole: null for spies; a unique role string from that location (e.g. "Captain")
+   *   — locationList: all enabled locations (shown to all players for interrogation)
    *   — fellowSpies:  array of { playerId, playerName } | null
    */
   getSetup(players, seedString, _category, state) {
@@ -145,30 +159,42 @@ export const SpyfallModule = {
 
     if (players.length < 4 || enabled.length === 0) return null;
 
-    // Use a dedicated PRNG for spy-count randomisation so the shuffle result
-    // is identical regardless of whether randomiseSpies is on or off.
+    // Dedicated PRNGs keep results stable regardless of which options are on/off
     const shufflePrng = createPRNG(seedString);
     const countPrng   = createPRNG(seedString + '_C');
     const locPrng     = createPRNG(seedString + '_L');
+    const rolePrng    = createPRNG(seedString + '_R');
 
     let spyCount = state?.spyCount ?? 1;
     if (state?.randomizeSpies) {
       const maxRand = Math.min(SpyfallModule.maxSpyCount, Math.floor(players.length / 2));
       spyCount = countPrng.nextInt(1, maxRand + 1);
     }
-    // Guard: never more spies than half the players
     spyCount = Math.min(spyCount, Math.max(1, Math.floor(players.length / 2)));
 
     const spiesKnow = state?.spiesKnowEachOther ?? false;
 
-    const location = locPrng.nextFrom(enabled);
-    const shuffled = deterministicShuffle([...players], shufflePrng);
+    const location     = locPrng.nextFrom(enabled);
+    const locationData = SPYFALL_LOCATION_DATA.find((d) => d.title === location);
+    const shuffled     = deterministicShuffle([...players], shufflePrng);
 
     const spySet = new Set(shuffled.slice(0, spyCount).map((p) => p.id));
+
+    // Assign unique roles to all civilian players from the location's role list.
+    // If there are more civilians than roles, roles cycle (deterministicShuffle
+    // ensures a stable, non-repeating order up to roles.length, then wraps).
+    const availableRoles = locationData?.roles
+      ? deterministicShuffle([...locationData.roles], rolePrng)
+      : [];
+    let roleIndex = 0;
 
     return shuffled.map((player) => {
       const isSpy = spySet.has(player.id);
       const role  = isSpy ? SPYFALL_ROLES.SPY : SPYFALL_ROLES.CIVILIAN;
+
+      const civilianRole = isSpy
+        ? null
+        : availableRoles[roleIndex++ % Math.max(1, availableRoles.length)] ?? null;
 
       const fellowSpies = (spiesKnow && isSpy)
         ? shuffled
@@ -181,6 +207,7 @@ export const SpyfallModule = {
         playerName:   player.name,
         role,
         location:     isSpy ? null : location,
+        civilianRole,
         locationList: [...enabled],
         fellowSpies,
         color:        SPYFALL_ROLE_COLORS[role],
@@ -194,10 +221,12 @@ export const SpyfallModule = {
     const randomizeSpies = state.randomizeSpies ?? false;
     const spiesKnow      = state.spiesKnowEachOther ?? false;
     const enabled        = state.enabledLocations ?? SPYFALL_LOCATIONS;
+    const roundSecs      = state.roundSeconds ?? SPYFALL_ROUND_SECONDS;
     return [
-      { label: 'Spies',              value: randomizeSpies ? 'Random' : String(spyCount) },
-      { label: 'Spies know each other', value: spiesKnow ? 'Yes' : 'No' },
-      { label: 'Locations',          value: `${enabled.length} of ${SPYFALL_LOCATIONS.length}` },
+      { label: 'Round time',            value: `${Math.round(roundSecs / 60)} min` },
+      { label: 'Spies',                 value: randomizeSpies ? 'Random' : String(spyCount) },
+      { label: 'Allied Spies', value: spiesKnow ? 'Yes' : 'No' },
+      { label: 'Locations',             value: `${enabled.length}` },
     ];
   },
 };

@@ -39,7 +39,7 @@ export const InsiderModule = {
   defaultState() {
     return {
       rotatingMaster:        false,
-      questionSeconds:       300,
+      roundSeconds:          300,
       possibilityOfNoInsider: false,
     };
   },
@@ -58,16 +58,6 @@ export const InsiderModule = {
         { value: false, label: 'Random' },
         { value: true,  label: 'Rotating' },
       ],
-    },
-    {
-      type:    'stepper',
-      key:     'questionSeconds',
-      label:   'Question Time',
-      default: 300,
-      min:     60,
-      max:     1800,
-      step:    60,
-      format:  (v) => `${Math.round(v / 60)} min`,
     },
     {
       type:    'segmented',
@@ -90,11 +80,11 @@ export const InsiderModule = {
   //   [7]    settings: bit0=rotatingMaster, bits[6:1]=questionMinutes-1 (0-29)
   //   [8..]  encoded player list (encodePlayers format)
 
-  encodeGameState({ players, seed, round, startingSeed, rotatingMaster = false, questionSeconds = 300, possibilityOfNoInsider = false }) {
+  encodeGameState({ players, seed, round, startingSeed, rotatingMaster = false, roundSeconds = 300, possibilityOfNoInsider = false }) {
     const seedBytes      = encodeSeed(seed);
     const startSeedBytes = encodeSeed(startingSeed ?? seed);
     const playerBytes    = encodePlayers(players);
-    const qMins          = Math.max(1, Math.min(30, Math.round(questionSeconds / 60)));
+    const qMins          = Math.max(1, Math.min(30, Math.round(roundSeconds / 60)));
     const settingsByte   = (rotatingMaster ? 0x01 : 0x00) | (((qMins - 1) & 0x1F) << 1) | (possibilityOfNoInsider ? 0x40 : 0x00);
 
     const buf = new Uint8Array(8 + playerBytes.length);
@@ -117,12 +107,12 @@ export const InsiderModule = {
     const settingsByte   = payload[7] & 0xFF;
     const rotatingMaster         = Boolean(settingsByte & 0x01);
     const qMins                  = ((settingsByte >> 1) & 0x1F) + 1;
-    const questionSeconds         = qMins * 60;
+    const roundSeconds            = qMins * 60;
     const possibilityOfNoInsider  = Boolean(settingsByte & 0x40);
     const { players }             = decodePlayers(payload, 8);
     return {
       gameType: 'insider', seed, startingSeed, round, players,
-      rotatingMaster, questionSeconds, possibilityOfNoInsider,
+      rotatingMaster, roundSeconds, possibilityOfNoInsider,
       status: 'lobby', category: '',
     };
   },
@@ -177,19 +167,17 @@ export const InsiderModule = {
     });
   },
 
-  /** Returns timer seconds for the current round (driven by questionSeconds setting). */
+  /** Returns timer seconds for the current round. */
   getTimerSeconds(state) {
-    return state?.questionSeconds ?? INSIDER_ROUND_SECONDS;
+    return state?.roundSeconds ?? INSIDER_ROUND_SECONDS;
   },
 
   /** Returns a list of { label, value } pairs for the pre-game settings summary. */
   getSettingsSummary(state) {
     const rotatingMaster         = state?.rotatingMaster         ?? false;
-    const questionSeconds        = state?.questionSeconds        ?? 300;
     const possibilityOfNoInsider = state?.possibilityOfNoInsider ?? false;
     return [
       { label: 'Master',  value: rotatingMaster ? 'Rotating' : 'Random' },
-      { label: 'Time',    value: `${Math.round(questionSeconds / 60)} min` },
       { label: 'Insider', value: possibilityOfNoInsider ? 'Maybe' : 'Always' },
     ];
   },

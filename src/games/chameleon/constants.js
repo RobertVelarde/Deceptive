@@ -18,20 +18,20 @@ export const CHAMELEON_ROLE_COLORS = {
   agent:     '#1565C0',
 };
 
-export const CHAMELEON_ROUND_SECONDS = 240;
+export const CHAMELEON_ROUND_SECONDS = 0;
 
 // ROLE_META drives the generic GamePlayScreen — no game-specific component needed.
 export const CHAMELEON_ROLE_META = {
   chameleon: {
     label:      'CHAMELEON',
     emoji:      '🦎',
-    desc:       "You don't know the secret word. Listen to the clues, bluff convincingly, and try not to get caught!",
+    desc:       "You don't know the secret word. Blend in, avoid detection, and find out the secret word!",
     showsTimer: false,
   },
   agent: {
     label:      'AGENT',
     emoji:      '🔎',
-    desc:       'You know the secret word. Give one clue that proves it — specific enough to show you know, subtle enough to protect the word.',
+    desc:       'You know the secret word. Say a word related to it, but avoid revealing it to the Chameleon!',
     showsTimer: false,
   },
 };

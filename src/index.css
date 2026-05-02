@@ -41,6 +41,15 @@ button, a {
   touch-action: manipulation;
 }
 
+/* Hide scrollbars while keeping scroll behaviour */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Prevent iOS Safari from auto-zooming on input focus.
    Safari zooms when a focused input's font-size is below 16px. Using
    !important ensures this floor holds even when Tailwind utility classes

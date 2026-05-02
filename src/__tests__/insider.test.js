@@ -72,10 +72,10 @@ describe('InsiderModule.defaultState()', () => {
   it('contains rotatingMaster (boolean)', () =>
     expect(typeof InsiderModule.defaultState().rotatingMaster).toBe('boolean'));
 
-  it('contains questionSeconds (positive integer)', () => {
-    const { questionSeconds } = InsiderModule.defaultState();
-    expect(Number.isInteger(questionSeconds)).toBe(true);
-    expect(questionSeconds).toBeGreaterThan(0);
+  it('contains roundSeconds (positive integer)', () => {
+    const { roundSeconds } = InsiderModule.defaultState();
+    expect(Number.isInteger(roundSeconds)).toBe(true);
+    expect(roundSeconds).toBeGreaterThan(0);
   });
 
   it('contains possibilityOfNoInsider (boolean)', () =>
@@ -271,7 +271,7 @@ describe('InsiderModule encode/decode round-trip', () => {
     startingSeed:           'AB12',
     round:                  1,
     rotatingMaster:         false,
-    questionSeconds:        300,
+    roundSeconds:           300,
     possibilityOfNoInsider: false,
   };
 
@@ -299,16 +299,16 @@ describe('InsiderModule encode/decode round-trip', () => {
     expect(roundTrip({ ...BASE, rotatingMaster: true }).rotatingMaster).toBe(true);
   });
 
-  it('preserves questionSeconds=300', () => {
-    expect(roundTrip({ ...BASE, questionSeconds: 300 }).questionSeconds).toBe(300);
+  it('preserves roundSeconds=300', () => {
+    expect(roundTrip({ ...BASE, roundSeconds: 300 }).roundSeconds).toBe(300);
   });
 
-  it('preserves questionSeconds=600 (10 min)', () => {
-    expect(roundTrip({ ...BASE, questionSeconds: 600 }).questionSeconds).toBe(600);
+  it('preserves roundSeconds=600 (10 min)', () => {
+    expect(roundTrip({ ...BASE, roundSeconds: 600 }).roundSeconds).toBe(600);
   });
 
-  it('preserves questionSeconds=1800 (30 min)', () => {
-    expect(roundTrip({ ...BASE, questionSeconds: 1800 }).questionSeconds).toBe(1800);
+  it('preserves roundSeconds=1800 (30 min)', () => {
+    expect(roundTrip({ ...BASE, roundSeconds: 1800 }).roundSeconds).toBe(1800);
   });
 
   it('preserves possibilityOfNoInsider=false', () => {
@@ -338,8 +338,8 @@ describe('InsiderModule encode/decode round-trip', () => {
 
 // ── getTimerSeconds ────────────────────────────────────────────────────────
 describe('InsiderModule.getTimerSeconds()', () => {
-  it('returns questionSeconds from state', () =>
-    expect(InsiderModule.getTimerSeconds({ questionSeconds: 420 })).toBe(420));
+  it('returns roundSeconds from state', () =>
+    expect(InsiderModule.getTimerSeconds({ roundSeconds: 420 })).toBe(420));
 
   it('returns INSIDER_ROUND_SECONDS when state is null', () =>
     expect(InsiderModule.getTimerSeconds(null)).toBe(INSIDER_ROUND_SECONDS));
@@ -355,12 +355,12 @@ describe('InsiderModule.getTimerSeconds()', () => {
 describe('InsiderModule.getSettingsSummary()', () => {
   const state = {
     rotatingMaster:         false,
-    questionSeconds:        300,
+    roundSeconds:           300,
     possibilityOfNoInsider: false,
   };
 
-  it('returns an array with at least 3 entries', () => {
-    expect(InsiderModule.getSettingsSummary(state).length).toBeGreaterThanOrEqual(3);
+  it('returns an array with at least 2 entries', () => {
+    expect(InsiderModule.getSettingsSummary(state).length).toBeGreaterThanOrEqual(2);
   });
 
   it('each entry has label and value', () => {
@@ -380,12 +380,6 @@ describe('InsiderModule.getSettingsSummary()', () => {
     const master = InsiderModule.getSettingsSummary({ ...state, rotatingMaster: true })
       .find((e) => e.label === 'Master');
     expect(master?.value).toBe('Rotating');
-  });
-
-  it('formats questionSeconds as minutes', () => {
-    const time = InsiderModule.getSettingsSummary({ ...state, questionSeconds: 300 })
-      .find((e) => e.label === 'Time');
-    expect(time?.value).toContain('5');
   });
 
   it('reflects possibilityOfNoInsider=false as "Always"', () => {

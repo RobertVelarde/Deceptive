@@ -15,6 +15,9 @@ import { buildGameStateParam, GAME_TYPE_IDS } from '../engine/gamestate';
 import { GlassCard }     from './shared/GlassCard';
 import { Button }        from './shared/Button';
 import { Modal }         from './shared/Modal';
+import { WordGrid }      from './shared/WordGrid';
+import { CHAMELEON_WORD_CATEGORIES } from '../games/chameleon/words';
+import { CHAMELEON_CUSTOM_CATEGORY } from '../games/chameleon/index';
 
 // How long (ms) the user must hold before the change-player warning fires
 const LONG_PRESS_MS = 600;
@@ -32,6 +35,10 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
   const [qrDataUrl, setQrDataUrl]            = useState(null);
   const [editLobbyWarn, setEditLobbyWarn]    = useState(false);
   const [changeNameWarn, setChangeNameWarn]  = useState(false);
+  const [showPlayers, setShowPlayers]        = useState(false);
+  const [showLocations, setShowLocations]    = useState(false);
+  const [showRoundTime, setShowRoundTime]    = useState(false);
+  const [showWordGrid, setShowWordGrid]      = useState(false);
 
   const holdTimerRef = useRef(null);
 
@@ -86,23 +93,34 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
       </div>
 
       <GlassCard className="w-full max-w-sm p-6 flex flex-col gap-5">
+        <div className="flex flex-row gap-2 w-full">
+          {/* Playing as — half-width button; long-press to trigger change-identity warning */}
+          <button
+            className="w-2/3 flex flex-col items-center gap-1 py-3 px-2 rounded-2xl bg-zinc-800/60 active:opacity-70 transition-opacity select-none"
+            onPointerDown={startHold}
+            onPointerUp={cancelHold}
+            onPointerLeave={cancelHold}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Playing as</span>
+            <span className="text-xl font-black text-white">
+              {identity?.name ?? '—'}
+            </span>
+            <span className="text-[10px] text-zinc-600">
+              {identity ? 'Hold to change player' : 'Waiting for selection…'}
+            </span>
+          </button>
 
-        {/* Playing as — full-width button; long-press to trigger change-identity warning */}
-        <button
-          className="w-full flex flex-col items-center gap-1 py-3 px-2 rounded-2xl bg-zinc-800/60 active:opacity-70 transition-opacity select-none"
-          onPointerDown={startHold}
-          onPointerUp={cancelHold}
-          onPointerLeave={cancelHold}
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <span className="text-[10px] uppercase tracking-widest text-zinc-500">Playing as</span>
-          <span className="text-xl font-black text-white">
-            {identity?.name ?? '—'}
-          </span>
-          <span className="text-[10px] text-zinc-600">
-            {identity ? 'Hold to change player' : 'Waiting for selection…'}
-          </span>
-        </button>
+          {/* Players tile — half-width button; tappable */}
+          <button
+            className="w-1/3 flex flex-col items-center gap-1 py-3 px-2 rounded-2xl bg-zinc-800/60 active:opacity-70 transition-opacity select-none"
+            onClick={() => setShowPlayers(true)}
+          >
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Players</span>
+            <span className="text-xl font-bold text-zinc-100">{state.players.length}</span>
+            <span className="text-[10px] text-zinc-600">Tap to see</span>
+          </button>
+        </div>
 
         <div className="border-t border-white/5" />
 
@@ -146,31 +164,64 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
         {/* Settings summary — only shown when the module has configurable settings */}
         {(() => {
           const summary = module.getSettingsSummary?.(state) ?? [];
-          if (!summary.length) return null;
+          const gameSupportsTimer = (module.constants?.ROUND_SECONDS ?? 300) > 0;
+          const roundSecs = gameSupportsTimer ? (state.roundSeconds ?? module.constants?.ROUND_SECONDS ?? 300) : 0;
+          const roundTimeBubble = { label: 'Round time', value: `${Math.round(roundSecs / 60)} min` };
+          // Inject round time for all games; avoid duplicating Spyfall's existing entry
+          const summaryWithoutRoundTime = summary.filter((b) => b.label !== 'Round time');
+          const seedBubble = { label: 'Seed', value: state.startingSeed ?? state.seed ?? '????' };
+          const bubbles = [
+            ...(roundSecs > 0 ? [roundTimeBubble] : []),
+            ...summaryWithoutRoundTime,
+            seedBubble,
+          ];
           return (
             <>
               <div className="border-t border-white/5" />
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500 text-center">
-                  Settings
-                </span>
                 <div className="flex flex-wrap gap-1.5 justify-center">
-                  {summary.map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/60"
-                    >
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}:</span>
-                      <span className="text-xs font-bold text-zinc-200">{value}</span>
-                    </div>
-                  ))}
+                  {bubbles.map(({ label, value }) => {
+                    const isLocations = label === 'Locations' && state.gameType === 'spyfall';
+                    const isCategory  = label === 'Categories' && state.gameType === 'chameleon';
+                    if (isCategory) {
+                      return (
+                        <button
+                          key={label}
+                          onClick={() => setShowWordGrid(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/60 active:opacity-70 transition-opacity"
+                        >
+                          <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}:</span>
+                          <span className="text-xs font-bold text-zinc-200">{value}</span>
+                        </button>
+                      );
+                    }
+                    if (isLocations) {
+                      return (
+                        <button
+                          key={label}
+                          onClick={() => setShowLocations(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/60 active:opacity-70 transition-opacity"
+                        >
+                          <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}:</span>
+                          <span className="text-xs font-bold text-zinc-200">{value}</span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <div
+                        key={label}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/60"
+                      >
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}:</span>
+                        <span className="text-xs font-bold text-zinc-200">{value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </>
           );
         })()}
-
-        <div className="border-t border-white/5" />
 
         {/* Deal cards */}
         <Button
@@ -191,6 +242,73 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
       >
         ← Edit Lobby
       </button>
+
+      {/* Chameleon: word grid modal */}
+      {state.gameType === 'chameleon' && (() => {
+        const activeCategory = state.category || module.categories?.[0];
+        const words = activeCategory === CHAMELEON_CUSTOM_CATEGORY
+          ? (state.customWords ?? [])
+          : (CHAMELEON_WORD_CATEGORIES[activeCategory] ?? []);
+        return (
+          <Modal
+            isOpen={showWordGrid}
+            onClose={() => setShowWordGrid(false)}
+            title={`Category · ${activeCategory === CHAMELEON_CUSTOM_CATEGORY ? 'Custom' : (activeCategory || '')}`}
+          >
+            {words.length ? (
+              <WordGrid words={words} seed={state.startingSeed ?? state.seed} />
+            ) : (
+              <p className="text-zinc-500 text-sm text-center py-4">No words available</p>
+            )}
+          </Modal>
+        );
+      })()}
+
+      {/* Enabled locations modal */}
+      <Modal
+        isOpen={showLocations}
+        onClose={() => setShowLocations(false)}
+        title={`Locations (${(state.enabledLocations ?? []).length})`}
+      >
+        {(state.enabledLocations ?? []).length === 0 ? (
+          <p className="text-zinc-500 text-sm text-center py-4">No locations enabled</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5 max-h-80 overflow-y-auto scrollbar-hide">
+            {(state.enabledLocations ?? []).map((loc) => (
+              <div
+                key={loc}
+                className="px-3 py-2 rounded-xl text-xs font-medium text-center bg-zinc-800/60 text-zinc-300"
+              >
+                {loc}
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* Players list modal */}
+      <Modal isOpen={showPlayers} onClose={() => setShowPlayers(false)} title={`Players · ${state.players.length}`}>
+        <div className="flex flex-col gap-2">
+          {state.players.map((p) => (
+            <div
+              key={p.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                p.id === identity?.id
+                  ? 'bg-zinc-700/50 border-white/10'
+                  : 'bg-zinc-800/40 border-white/5'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-300 shrink-0">
+                {p.name[0]}
+              </div>
+              <span className="text-sm font-medium text-zinc-300 flex-1 truncate">{p.name}</span>
+              {p.id === identity?.id && (
+                <span className="text-[10px] uppercase tracking-widest text-zinc-500">you</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </Modal>
 
       {/* QR code modal — includes Copy Link */}
       <Modal isOpen={qrOpen} onClose={() => setQrOpen(false)} title="Scan to Join">

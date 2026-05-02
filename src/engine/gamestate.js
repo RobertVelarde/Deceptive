@@ -16,9 +16,10 @@ import { SEED_CHARS, SEED_BASE, SEED_LENGTH } from './prng';
 // ── Game type registry ─────────────────────────────────────────────────────
 /** Map game name → 3-bit ID (0-7). Must never be reordered once published. */
 export const GAME_TYPE_IDS = {
-  insider:   0,
-  chameleon: 1,
-  spyfall:   2,
+  insider:    0,
+  chameleon:  1,
+  spyfall:    2,
+  wavelength: 3,
 };
 
 /** Reverse map: 3-bit ID → game name. Built automatically from GAME_TYPE_IDS. */
@@ -165,6 +166,53 @@ export function decodePlayers(view, offset = 0) {
     players.push({ id: generatePlayerId(), name });
   }
   return { players, bytesRead: Math.ceil((bitPos - offset * 8) / 8) };
+}
+
+/**
+ * Encode a fixed-length array of words using 5-bit-per-character packing.
+ * Each word: [nameLen:4][charIdx:5]×nameLen — same charset as NAME_CHARSET.
+ * Words are sanitized and truncated to NAME_MAX_LENGTH before encoding.
+ *
+ * @param {string[]} words
+ * @returns {Uint8Array}
+ */
+export function encodeWordList(words) {
+  const sanitized = words.map((w) => sanitizeName(w));
+  const totalBits = sanitized.reduce((s, w) => s + 4 + w.length * 5, 0);
+  const buf = new Uint8Array(Math.ceil(totalBits / 8));
+  let pos = 0;
+  for (const word of sanitized) {
+    pos = _writeBits(buf, pos, word.length, 4);
+    for (const ch of word) {
+      pos = _writeBits(buf, pos, NAME_CHARSET.indexOf(ch), 5);
+    }
+  }
+  return buf;
+}
+
+/**
+ * Decode `count` words from a Uint8Array starting at bit position `startBit`.
+ * Returns the decoded words and the total number of bits consumed.
+ *
+ * @param {Uint8Array} view
+ * @param {number}     count        — number of words to decode
+ * @param {number}     [startBit=0] — bit offset within view to start from
+ * @returns {{ words: string[], bitsRead: number }}
+ */
+export function decodeWordList(view, count, startBit = 0) {
+  let bitPos = startBit;
+  const words = [];
+  for (let i = 0; i < count; i++) {
+    let r = _readBits(view, bitPos, 4); bitPos = r.pos;
+    const len = r.value;
+    let word = '';
+    for (let j = 0; j < len; j++) {
+      r = _readBits(view, bitPos, 5); bitPos = r.pos;
+      word += NAME_CHARSET[r.value] ?? '';
+    }
+    words.push(word);
+  }
+  return { words, bitsRead: bitPos - startBit };
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────────

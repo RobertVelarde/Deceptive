@@ -1,39 +1,132 @@
-// src/games/spyfall/locations.js — Canonical Spyfall location list
+// src/games/spyfall/locations.js — Canonical Spyfall location + role data
 //
-// Exactly 30 locations. Order is stable — indices are encoded in the URL bitmask.
-// Never reorder or remove entries once published; only append new ones at the end
-// (and update the bitmask width in index.js if you exceed 32 total).
+// SPYFALL_LOCATION_DATA is the single source of truth for both location names and
+// the roles available at each location.
+//
+// Index stability: SPYFALL_LOCATIONS (the flat title array) is derived from this
+// list and its indices are encoded in the share-URL bitmask. Never reorder or
+// remove entries — only append new ones at the end (update the bitmask width in
+// index.js if you exceed 32 total).
 
-export const SPYFALL_LOCATIONS = [
-  'Airplane',
-  'Airport',
-  'Art Museum',
-  'Bank',
-  'Beach',
-  'Casino',
-  'Cathedral',
-  'Circus Tent',
-  'Corporate Party',
-  'Cruise Ship',
-  'Embassy',
-  'Hospital',
-  'Hotel',
-  'Military Base',
-  'Movie Studio',
-  'Ocean Liner',
-  'Passenger Train',
-  'Pirate Ship',
-  'Police Station',
-  'Restaurant',
-  'School',
-  'Service Station',
-  'Space Station',
-  'Spa',
-  'Sports Arena',
-  'Submarine',
-  'Supermarket',
-  'Theater',
-  'University',
-  'White House',
+export const SPYFALL_LOCATION_DATA = [
+  {
+    title: 'Airplane',
+    roles: ['First Class Passenger', 'Air Marshall', 'Mechanic', 'Air Hostess', 'Co-Pilot', 'Captain', 'Economy Class Passenger'],
+  },
+  {
+    title: 'Bank',
+    roles: ['Armored Car Driver', 'Manager', 'Consultant', 'Robber', 'Security Guard', 'Teller', 'Customer'],
+  },
+  {
+    title: 'Beach',
+    roles: ['Beach Waitress', 'Kite Surfer', 'Lifeguard', 'Thief', 'Beach Photographer', 'Ice Cream Truck Driver', 'Beach Goer'],
+  },
+  {
+    title: 'Cathedral',
+    roles: ['Priest', 'Beggar', 'Sinner', 'Tourist', 'Sponsor', 'Chorister', 'Parishioner'],
+  },
+  {
+    title: 'Circus Tent',
+    roles: ['Acrobat', 'Animal Trainer', 'Magician', 'Fire Eater', 'Clown', 'Juggler', 'Visitor'],
+  },
+  {
+    title: 'Corporate Party',
+    roles: ['Entertainer', 'Manager', 'Unwanted Guest', 'Owner', 'Secretary', 'Delivery Boy', 'Accountant'],
+  },
+  {
+    title: 'Crusader Army',
+    roles: ['Monk', 'Imprisoned Saracen', 'Servant', 'Bishop', 'Squire', 'Archer', 'Knight'],
+  },
+  {
+    title: 'Casino',
+    roles: ['Bartender', 'Head Security Guard', 'Bouncer', 'Manager', 'Hustler', 'Dealer', 'Gambler'],
+  },
+  {
+    title: 'Day Spa',
+    roles: ['Stylist', 'Masseuse', 'Manicurist', 'Makeup Artist', 'Dermatologist', 'Beautician', 'Customer'],
+  },
+  {
+    title: 'Dublin Anime Meetup',
+    roles: ['Organizer', 'Attendee', 'Bartender', 'Musician', 'Clueless Customer'],
+  },
+  {
+    title: 'Embassy',
+    roles: ['Security Guard', 'Secretary', 'Ambassador', 'Tourist', 'Refugee', 'Diplomat', 'Government Official'],
+  },
+  {
+    title: 'Hospital',
+    roles: ['Nurse', 'Doctor', 'Anesthesiologist', 'Intern', 'Therapist', 'Surgeon', 'Patient'],
+  },
+  {
+    title: 'Hotel',
+    roles: ['Doorman', 'Security Guard', 'Manager', 'Housekeeper', 'Bartender', 'Bellman', 'Customer'],
+  },
+  {
+    title: 'Military Base',
+    roles: ['Deserter', 'Colonel', 'Medic', 'Sniper', 'Officer', 'Tank Engineer', 'Soldier'],
+  },
+  {
+    title: 'Movie Studio',
+    roles: ['Stunt Man', 'Sound Engineer', 'Camera Man', 'Director', 'Costume Artist', 'Producer', 'Actor'],
+  },
+  {
+    title: 'Ocean Liner',
+    roles: ['Cook', 'Captain', 'Bartender', 'Musician', 'Waiter', 'Mechanic', 'Rich Passenger'],
+  },
+  {
+    title: 'Passenger Train',
+    roles: ['Mechanic', 'Border Patrol', 'Train Attendant', 'Restaurant Chef', 'Train Driver', 'Conductor', 'Passenger'],
+  },
+  {
+    title: 'Pirate Ship',
+    roles: ['Cook', 'Slave', 'Cannoneer', 'Tied Up Prisoner', 'Cabin Boy', 'Brave Captain', 'Sailor'],
+  },
+  {
+    title: 'Polar Station',
+    roles: ['Medic', 'Expedition Leader', 'Biologist', 'Radioman', 'Hydrologist', 'Meteorologist', 'Geologist'],
+  },
+  {
+    title: 'Police Station',
+    roles: ['Detective', 'Lawyer', 'Journalist', 'Criminalist', 'Archivist', 'Criminal', 'Patrol Officer'],
+  },
+  {
+    title: 'Restaurant',
+    roles: ['Musician', 'Bouncer', 'Hostess', 'Head Chef', 'Food Critic', 'Waiter', 'Customer'],
+  },
+  {
+    title: 'School',
+    roles: ['Gym Teacher', 'Principal', 'Security Guard', 'Janitor', 'Cafeteria Lady', 'Maintenance Man', 'Student'],
+  },
+  {
+    title: 'Service Station',
+    roles: ['Manager', 'Tire Specialist', 'Biker', 'Car Owner', 'Car Wash Operator', 'Electrician', 'Auto Mechanic'],
+  },
+  {
+    title: 'Space Station',
+    roles: ['Engineer', 'Alien', 'Pilot', 'Commander', 'Scientist', 'Doctor', 'Space Tourist'],
+  },
+  {
+    title: 'Submarine',
+    roles: ['Cook', 'Commander', 'Sonar Technician', 'Electronics Technician', 'Radioman', 'Navigator', 'Sailor'],
+  },
+  {
+    title: 'Supermarket',
+    roles: ['Cashier', 'Butcher', 'Janitor', 'Security Guard', 'Food Sample Demonstrator', 'Shelf Stocker', 'Customer'],
+  },
+  {
+    title: 'Theater',
+    roles: ['Coat Check Lady', 'Prompter', 'Cashier', 'Director', 'Actor', 'Crew Man', 'Audience Member'],
+  },
+  {
+    title: 'University',
+    roles: ['Graduate Student', 'Professor', 'Dean', 'Psychologist', 'Maintenance Man', 'Janitor', 'Student'],
+  },
+  {
+    title: 'World War II Squad',
+    roles: ['Resistance Fighter', 'Radioman', 'Scout', 'Medic', 'Cook', 'Imprisoned Nazi', 'Soldier'],
+  },
 ];
-// 30 entries — fits in 30 bits of a uint32 bitmask (2 bits reserved).
+// 29 entries — fits in 29 bits of a uint32 bitmask (3 bits reserved).
+
+/** Flat title list — used for URL bitmask encoding.  Never reorder. */
+export const SPYFALL_LOCATIONS = SPYFALL_LOCATION_DATA.map((l) => l.title);
