@@ -6,6 +6,8 @@ export const WAVELENGTH_COLORS = {
   primaryDark:  '#4c1d95',
   card:         'rgba(124, 58, 237, 0.10)',
   accent:       '#f59e0b',
+  correct:      '#22c55e',  // post-submit: correct answer box
+  wrong:        '#ef4444',  // post-submit: incorrect guess box
 };
 
 export const WAVELENGTH_ROLES = {
@@ -24,7 +26,6 @@ export const WAVELENGTH_ROUND_SECONDS = 0;
 export const WAVELENGTH_ROLE_META = {
   guesser: {
     label:           'GUESSER',
-    emoji:           '🔮',
     desc:            "Listen to every Psychic's clue, then guess the secret number on the spectrum!",
     showsTimer:      false,
     spectrumGuesser: true,   // show spectrum row (no number revealed)
@@ -32,7 +33,6 @@ export const WAVELENGTH_ROLE_META = {
   },
   psychic: {
     label:         'PSYCHIC',
-    emoji:         '🧠',
     desc:          'You know the secret number. Give ONE verbal clue based on the spectrum — no numbers allowed!',
     showsTimer:    false,
     spectrumReveal: true,   // show spectrum row with hold-to-reveal number

@@ -16,6 +16,7 @@ import {
   WAVELENGTH_ROUND_SECONDS,
   WAVELENGTH_ROLE_META,
 } from './constants';
+import { WavelengthGameExtras } from './components/GameExtras';
 
 export const WavelengthModule = {
   name:        'wavelength',
@@ -32,6 +33,9 @@ export const WavelengthModule = {
   getTimerSeconds(_state) {
     return 0;
   },
+
+  /** Spectrum reveal panel rendered below the role card. */
+  GameExtras: WavelengthGameExtras,
 
   constants: {
     COLORS:        WAVELENGTH_COLORS,
@@ -93,8 +97,9 @@ export const WavelengthModule = {
         playerId:     player.id,
         playerName:   player.name,
         role,
-        spectrum,                                     // visible to all players
-        secretNumber: isGuesser ? null : secretNumber, // guesser does not know the number
+        spectrum,                                      // visible to all players
+        secretNumber: isGuesser ? null : secretNumber,  // guesser does not know the number
+        revealNumber: isGuesser ? secretNumber : null,  // revealed to guesser only after submission
         color:        WAVELENGTH_ROLE_COLORS[role],
       };
     });

@@ -26,18 +26,14 @@ export const SPYFALL_ROUND_SECONDS = 480; // 8 minutes
 export const SPYFALL_ROLE_META = {
   spy: {
     label:                  'SPY',
-    emoji:                  '🕵️',
     desc:                   "You don't know the location. Blend in, answer vaguely, and avoid being caught!",
     showsTimer:             true,
-    timerManual:            true,
-    locationRevealDisabled: true,  // button visible but non-interactive (screen-peek prevention)
+    locationRevealDisabled: true,  // placeholder card visible but reveals nothing (screen-peek prevention)
   },
   civilian: {
     label:          'CIVILIAN',
-    emoji:          '👤',
     desc:           'You know the location. Give clues to expose the spy — without making it too obvious.',
     showsTimer:     true,
-    timerManual:    true,
-    locationReveal: true,  // hold-to-reveal: shows secret location + assigned role
+    locationReveal: true,  // shows secret location + assigned role
   },
 };

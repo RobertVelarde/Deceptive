@@ -1,15 +1,16 @@
 // src/games/insider/index.js — Insider game module
 //
-// Standard game module interface (all modules must export this shape):
-//   name:         string
-//   displayName:  string
-//   minPlayers:   number
-//   maxPlayers:   number
-//   constants:    { COLORS, ROLES, ROLE_COLORS, ROUND_SECONDS }
+// Standard game module interface exported by every game:
+//   name, displayName, minPlayers, maxPlayers
+//   constants:    { COLORS, ROLES, ROLE_COLORS, ROUND_SECONDS, ROLE_META }
+//   defaultState(): game-specific state defaults for new lobbies
+//   settingsSchema: (optional) generic control descriptors for LobbyScreen
+//   getTimerSeconds(state): round duration in seconds
 //   getSetup(players[], seedString, category, state) → Assignment[] | null
-//
-// To add a new game (e.g. Chameleon): copy this folder, change getSetup() and
-// constants, then register the module in src/games/index.js. No other files change.
+//   encodeGameState(state) → Uint8Array
+//   decodeGameState(payload) → object
+//   getSettingsSummary?(state) → { label, value }[]
+//   GameExtras: ReactComponent | null  — game-specific UI below the role card
 import { createPRNG, deterministicShuffle } from '../../engine/prng';
 import { encodeSeed, decodeSeed, encodePlayers, decodePlayers } from '../../engine/gamestate';
 import { INSIDER_WORDS } from './words';
@@ -166,6 +167,9 @@ export const InsiderModule = {
       };
     });
   },
+
+  /** Insider has no supplemental game UI below the role card. */
+  GameExtras: null,
 
   /** Returns timer seconds for the current round. */
   getTimerSeconds(state) {

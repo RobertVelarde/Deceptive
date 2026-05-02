@@ -1,80 +1,29 @@
-// src/components/GamePlayScreen.jsx — Generic game play screen
+// src/components/GamePlayScreen.jsx — High-level gameplay layout container.
 //
-// Works with any registered game module. All game-specific rendering is driven
-// by module.constants.ROLE_META — no per-game component files are required.
+// Renders the round header, the role card (with RevealShield for secret roles),
+// game-specific supplemental content (via module.GameExtras), the round timer,
+// and navigation buttons.
 //
-// ROLE_META shape (each module must include this in its constants):
-//   { [roleName]: { label: string, emoji: string, desc: string, showsTimer: boolean } }
-import React, { useState, useRef, useCallback, useEffect, use } from 'react';
-import { useTheme }     from '../styles/ThemeContext';
-import { getModule }    from '../games/index';
-import { GlassCard }    from './shared/GlassCard';
-import { Badge }        from './shared/Badge';
-import { Button }       from './shared/Button';
+// All game-specific UI is provided by module.GameExtras — GamePlayScreen has
+// no knowledge of individual game mechanics. Adding a new game requires only:
+//   1. Creating src/games/<name>/components/GameExtras.jsx
+//   2. Exporting it from the module as `GameExtras`
+import React, { useState } from 'react';
+import { useTheme }            from '../styles/ThemeContext';
+import { getModule }           from '../games/index';
+import { GlassCard }           from './shared/GlassCard';
+import { Badge }               from './shared/Badge';
+import { Button }              from './shared/Button';
 import { RevealShield }        from './shared/RevealShield';
-import { WordGrid }            from './shared/WordGrid';
 import { usePersistentTimer }  from '../engine/usePersistentTimer';
+import { useLongPress }        from '../engine/useLongPress';
+import { SpyfallReveal }       from '../games/spyfall/components/SpyfallReveal';
 
-// ── Word reveal — hold to reveal, tap to conceal ────────────────────────────
+// ── WordReveal — hold to reveal a single secret word, tap to conceal ─────────
+// Used for roles whose word is private but whose role identity is public
+// (e.g. the Insider Master sees their word after the card is already shown).
 function WordReveal({ word, disabled = false }) {
-  const HOLD_MS = 800;
-
-  // phase: 'hidden' | 'holding' | 'revealed' | 'concealing'
-  const [phase,    setPhase]    = useState('hidden');
-  const [progress, setProgress] = useState(0);
-
-  const holdTimerRef    = useRef(null);
-  const concealTimerRef = useRef(null);
-  const phaseRef        = useRef('hidden'); // stable mirror — safe to read inside callbacks
-
-  // Keep phaseRef in sync so event handlers never see stale phase
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
-
-  // Cleanup on unmount
-  useEffect(() => () => {
-    clearInterval(holdTimerRef.current);
-    clearTimeout(concealTimerRef.current);
-  }, []);
-
-  const onPressStart = useCallback(() => {
-    if (disabled) return;
-    const p = phaseRef.current;
-
-    if (p === 'revealed') {
-      // Tap while revealed → conceal
-      clearTimeout(concealTimerRef.current);
-      setPhase('concealing');
-      setProgress(0);
-      concealTimerRef.current = setTimeout(() => setPhase('hidden'), 400);
-      return;
-    }
-    if (p !== 'hidden') return;
-
-    // Begin hold from hidden state
-    setPhase('holding');
-    const start = Date.now();
-    holdTimerRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
-      if (elapsed >= HOLD_MS) {
-        clearInterval(holdTimerRef.current);
-        setProgress(100);
-        setPhase('revealed');
-      } else {
-        setProgress((elapsed / HOLD_MS) * 100);
-      }
-    }, 16);
-  }, []);
-
-  const onPressEnd = useCallback(() => {
-    // Releasing after reveal is intentionally a no-op
-    if (phaseRef.current !== 'holding') return;
-    clearInterval(holdTimerRef.current);
-    setProgress(0);
-    setPhase('hidden');
-  }, []);
-
-  const pct        = progress / 100;
-  const isRevealed = phase === 'revealed' || phase === 'concealing';
+  const { phase, pct, isRevealed, handlers } = useLongPress({ disabled });
   const maskedWord = '••••••••';
 
   return (
@@ -86,10 +35,7 @@ function WordReveal({ word, disabled = false }) {
         transition:   'border-color 0.3s ease, transform 0.15s ease',
         cursor:       disabled ? 'default' : 'pointer',
       }}
-      onPointerDown={onPressStart}
-      onPointerUp={onPressEnd}
-      onPointerLeave={onPressEnd}
-      onPointerCancel={onPressEnd}
+      {...(disabled ? {} : handlers)}
     >
       {/* Full-card fill — sweeps left to right while holding */}
       {!disabled && (
@@ -123,192 +69,7 @@ function WordReveal({ word, disabled = false }) {
     </div>
   );
 }
-// ── Wavelength spectrum — hold to reveal secret number (Psychics); static for Guesser ──
-function SpectrumReveal({ spectrum, secretNumber }) {
-  const HOLD_MS = 800;
-  const hasNumber = secretNumber != null;
 
-  const [phase,    setPhase]    = useState('hidden');
-  const [progress, setProgress] = useState(0);
-
-  const holdTimerRef    = useRef(null);
-  const concealTimerRef = useRef(null);
-  const phaseRef        = useRef('hidden');
-
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
-  useEffect(() => () => {
-    clearInterval(holdTimerRef.current);
-    clearTimeout(concealTimerRef.current);
-  }, []);
-
-  const onPressStart = useCallback(() => {
-    if (!hasNumber) return;
-    const p = phaseRef.current;
-    if (p === 'revealed') {
-      clearTimeout(concealTimerRef.current);
-      setPhase('concealing');
-      setProgress(0);
-      concealTimerRef.current = setTimeout(() => setPhase('hidden'), 400);
-      return;
-    }
-    if (p !== 'hidden') return;
-    setPhase('holding');
-    const start = Date.now();
-    holdTimerRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
-      if (elapsed >= HOLD_MS) {
-        clearInterval(holdTimerRef.current);
-        setProgress(100);
-        setPhase('revealed');
-      } else {
-        setProgress((elapsed / HOLD_MS) * 100);
-      }
-    }, 16);
-  }, [hasNumber]);
-
-  const onPressEnd = useCallback(() => {
-    if (phaseRef.current !== 'holding') return;
-    clearInterval(holdTimerRef.current);
-    setProgress(0);
-    setPhase('hidden');
-  }, []);
-
-  const pct        = progress / 100;
-  const isRevealed = phase === 'revealed' || phase === 'concealing';
-  const [leftLabel, rightLabel] = spectrum ?? ['', ''];
-
-  return (
-    <div
-      className="relative rounded-2xl border bg-black/20 p-4 flex flex-col gap-3 select-none overflow-hidden"
-      style={{
-        touchAction:  'none',
-        borderColor:  isRevealed ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.08)',
-        transition:   'border-color 0.3s ease, transform 0.15s ease',
-        cursor:       hasNumber ? 'pointer' : 'default',
-      }}
-      onPointerDown={onPressStart}
-      onPointerUp={onPressEnd}
-      onPointerLeave={onPressEnd}
-      onPointerCancel={onPressEnd}
-    >
-      {/* Hold-progress fill */}
-      {hasNumber && (
-        <div
-          className="absolute inset-0 bg-white/[0.04] origin-left"
-          style={{
-            transform:  `scaleX(${phase === 'holding' ? pct : 0})`,
-            opacity:    phase === 'holding' ? 1 : 0,
-            transition: 'opacity 0.2s ease',
-          }}
-        />
-      )}
-
-      {/* Spectrum end-labels */}
-      <div className="relative flex justify-between items-center px-0.5">
-        <span className="text-[11px] font-bold text-zinc-300 max-w-[42%] text-left leading-tight">{leftLabel.toUpperCase()}</span>
-        <span className="text-[11px] font-bold text-zinc-300 max-w-[42%] text-right leading-tight">{rightLabel.toUpperCase()}</span>
-      </div>
-
-      {/* 10-box spectrum row */}
-      <div className="relative flex gap-1">
-        {Array.from({ length: 10 }, (_, i) => {
-          const num       = i + 1;
-          const isTarget  = isRevealed && secretNumber === num;
-          return (
-            <div
-              key={num}
-              className="relative flex-1 h-11 rounded-md flex items-center justify-center text-xs font-bold transition-all duration-200"
-              style={
-                isTarget
-                  ? { backgroundColor: '#f59e0b', color: '#1c1917', boxShadow: '0 0 12px rgba(245,158,11,0.6)', border: '1px solid rgba(255,255,255,0.05)' }
-                  : { backgroundColor: 'rgba(39,39,42,0.7)', color: 'rgba(161,161,170,0.6)', border: '1px solid rgba(255,255,255,0.05)' }
-              }
-            >
-              {num}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Hint text */}
-      <p className="relative text-xs text-zinc-600 text-center">
-        {hasNumber
-          ? (isRevealed ? 'tap to conceal' : 'hold to reveal')
-          : ''}
-      </p>
-    </div>
-  );
-}
-
-// ── Spyfall location + role reveal — hold to reveal, tap to conceal ──────────
-function SpyfallReveal({ location, civilianRole, disabled = false }) {
-  const HOLD_MS = 800;
-
-  const [phase,    setPhase]    = useState('hidden');
-  const [progress, setProgress] = useState(0);
-
-  const holdTimerRef    = useRef(null);
-  const concealTimerRef = useRef(null);
-  const phaseRef        = useRef('hidden');
-
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
-  useEffect(() => () => {
-    clearInterval(holdTimerRef.current);
-    clearTimeout(concealTimerRef.current);
-  }, []);
-
-  const pct        = progress / 100;
-  const isRevealed = !disabled;
-  const cap        = (s) => s ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : '';
-
-  return (
-    <div
-      className="relative rounded-2xl border bg-black/20 p-4 select-none overflow-hidden"
-      style={{
-        touchAction: 'none',
-        borderColor: isRevealed ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.08)',
-        transition:  'border-color 0.3s ease, transform 0.15s ease',
-        cursor:      disabled ? 'default' : 'pointer',
-        minHeight:   '6.5rem',
-      }}
-    >
-      {(
-        <div className="flex flex-col gap-3">
-          {/* Secret Location */}
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Secret Location</p>
-            <p
-              className="text-2xl font-black tracking-tight"
-              style={{
-                color: isRevealed ? 'white' : `rgba(161,161,170,${0.22 + 0.78 * pct})`,
-                letterSpacing: isRevealed ? undefined : '0.18em',
-                transition: 'color 0.25s ease, letter-spacing 0.25s ease',
-              }}
-            >
-              {isRevealed ? cap(location) : '••••••••'}
-            </p>
-          </div>
-
-          {/* Assigned Role */}
-          {(
-            <div className="text-center border-t border-white/[0.06] pt-3">
-              <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Your Role</p>
-              <p
-                className="text-2xl font-black tracking-tight"
-                style={{
-                  color: isRevealed ? 'white' : `rgba(161,161,170,${0.22 + 0.78 * pct})`,
-                  transition: 'color 0.25s ease, letter-spacing 0.25s ease',
-                }}
-              >
-                {civilianRole ? cap(civilianRole) : 'Spy'}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 // ── Private role card — reads all display data from module.constants ──────────
 function RoleCard({ assignment, module, state }) {
   const meta      = module.constants.ROLE_META?.[assignment.role]
@@ -359,20 +120,6 @@ function RoleCard({ assignment, module, state }) {
   );
 }
 
-// ── Other-player row — intentionally reveals nothing about role ───────────────
-function OtherPlayerRow({ assignment }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-800/40 border border-white/5">
-      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-300 shrink-0">
-        {assignment.playerName[0]}
-      </div>
-      <span className="text-sm font-medium text-zinc-300 flex-1 truncate">
-        {assignment.playerName}
-      </span>
-    </div>
-  );
-}
-
 // ── Main export ───────────────────────────────────────────────────────────────
 export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) {
   const { colors } = useTheme();
@@ -384,15 +131,14 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   const _preRole        = assignments?.find((a) => a.playerId === identity?.id)?.role;
   const _preMeta        = _preRole ? (module.constants.ROLE_META?.[_preRole] ?? {}) : null;
   const shouldShowTimer = _preMeta?.showsTimer  ?? false;
-  const isManualTimer   = _preMeta?.timerManual ?? false;
-  const durationSeconds = state.roundSeconds ?? module.constants.ROUND_SECONDS ?? 300;
+  const durationSeconds = module.getTimerSeconds?.(state) ?? state.roundSeconds ?? module.constants.ROUND_SECONDS ?? 300;
   // Key encodes seed + round so switching rounds automatically resets the timer
   const timerKey        = `deception_timer_${state.seed}_${state.round}`;
 
   const timer = usePersistentTimer({
     durationSeconds,
     storageKey: timerKey,
-    autoStart:  !isManualTimer,
+    autoStart:  true,
   });
 
   if (!assignments) {
@@ -408,9 +154,8 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
     );
   }
 
-  const myAssignment     = assignments.find((a) => a.playerId === identity?.id);
-  const otherAssignments = assignments.filter((a) => a.playerId !== identity?.id);
-  const myMeta           = myAssignment
+  const myAssignment = assignments.find((a) => a.playerId === identity?.id);
+  const myMeta       = myAssignment
     ? (module.constants.ROLE_META?.[myAssignment.role] ?? {})
     : null;
 
@@ -476,46 +221,14 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
               </div>
             )}
 
-            {/* Chameleon: word grid — always visible, highlights secret tile after role is revealed */}
-            {myAssignment?.wordGrid && (
-              <GlassCard className="p-4 flex flex-col gap-2">
-                <WordGrid
-                  words={myAssignment.wordGrid}
-                  seed={state.startingSeed ?? state.seed}
-                  secretWord={roleRevealed ? myAssignment.word : undefined}
-                  roleColor={module.constants.ROLE_COLORS?.[myAssignment.role]}
-                />
-              </GlassCard>
-            )}
-
-            {/* Wavelength: spectrum row — always visible; Psychics hold to reveal secret number */}
-            {myAssignment?.spectrum && (
-              <SpectrumReveal
-                spectrum={myAssignment.spectrum}
-                secretNumber={myAssignment.secretNumber}
+            {/* Game-specific supplemental content — delegated to the active module */}
+            {myAssignment && module.GameExtras && (
+              <module.GameExtras
+                assignment={myAssignment}
+                state={state}
+                roleRevealed={roleRevealed}
+                module={module}
               />
-            )}
-
-            {/* Spyfall: scannable location reference list (visible to all players) */}
-            {myAssignment?.locationList?.length > 0 && (
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
-                  Locations
-                  <span className="ml-1.5 text-zinc-700 normal-case tracking-normal">
-                    {myAssignment.locationList.length} in play
-                  </span>
-                </p>
-                <div className="grid grid-cols-2 gap-1">
-                  {myAssignment.locationList.map((loc) => (
-                    <div
-                      key={loc}
-                      className="px-2.5 py-2 rounded-xl text-xs text-center font-medium text-zinc-400 bg-zinc-800/50 border border-white/[0.04]"
-                    >
-                      {loc}
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
           </div>
           {/* Bottom fade — fades the scroll area into the page background */}
@@ -543,18 +256,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
               </span>
             )}
 
-            {/* Start / Pause button — only for manual-start roles */}
-            {isManualTimer && !timer.expired && (
-              <button
-                onClick={timer.running ? timer.pause : timer.start}
-                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 hover:brightness-110"
-                style={{ backgroundColor: timer.running ? '#C62828' : '#2E7D32' }}
-              >
-                {timer.running
-                  ? 'Pause'
-                  : timer.remaining === durationSeconds ? 'Start' : 'Resume'}
-              </button>
-            )}
+
           </div>
         )}
 

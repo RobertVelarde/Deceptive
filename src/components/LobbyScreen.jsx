@@ -81,7 +81,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
 
       {/* ── Fixed header: logo + gamemode ────────────────────────────────── */}
       <div className="w-full max-w-sm py-2 flex flex-col gap-4">
-        {/* ── Section 1: Gamemode ──────────────────────────────────────────── */}
+        {/* ── Gamemode ──────────────────────────────────────────── */}
         <GlassCard className="w-full p-5 flex flex-col gap-3">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Gamemode</p>
           
@@ -122,7 +122,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
         <div ref={scrollRef} className="h-full overflow-y-auto scrollbar-hide">
         <div className="flex flex-col gap-4 pt-1 pb-8">
 
-          {/* ── Section 2: Settings ──────────────────────────────────────────── */}
+          {/* ── Settings ──────────────────────────────────────────── */}
           <GlassCard className="w-full p-5 flex flex-col gap-3">
 
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Settings</p>
@@ -427,7 +427,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
           )}
         </GlassCard>
 
-          {/* ── Section 3: Players ───────────────────────────────────────────── */}
+          {/* ── Players ───────────────────────────────────────────── */}
           <GlassCard className="w-full p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-[10px] uppercase tracking-widest text-zinc-500">Players</p>

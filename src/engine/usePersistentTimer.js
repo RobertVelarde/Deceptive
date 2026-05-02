@@ -1,8 +1,17 @@
 // src/engine/usePersistentTimer.js
+//
 // Refresh-agnostic, drift-resistant countdown timer backed by localStorage.
-// Instead of persisting remaining seconds, it persists an absolute deadline
-// (Date.now() + duration). Each tick recalculates remaining time from that
-// deadline, so background-tab throttling cannot cause drift.
+//
+// Design: instead of persisting remaining seconds, the timer persists an
+// absolute deadline (Date.now() + duration). Each tick recalculates the
+// remaining time from that deadline, so background-tab throttling and device
+// sleep cannot cause drift — the timer stays accurate across any gap.
+//
+// Lifecycle states:
+//   Not started — remaining = durationSeconds, running = false
+//   Running     — localStorage stores { deadline: <epoch ms> }
+//   Paused      — localStorage stores { remaining: <seconds> }
+//   Expired     — localStorage entry removed; remaining = 0
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**

@@ -1,6 +1,6 @@
 # Deceptive
 
-A serverless, deterministic social deduction game platform. Host or join **Insider**, **Chameleon**, or **Spyfall** with no backend — the entire game state lives in a shareable URL or QR code.
+A serverless, deterministic social deduction game platform. Host or join **Insider**, **Chameleon**, **Spyfall**, or **Wavelength** with no backend — the entire game state lives in a shareable URL or QR code.
 
 **Live site:** [deceptive.robertvelardejr.com](https://deceptive.robertvelardejr.com)
 
@@ -19,6 +19,7 @@ Deceptive uses a seeded PRNG to generate identical game states on every player's
 | **Insider** | 4–8 | The Master knows the secret word; one hidden Insider guides the group toward it. Find the Insider before time runs out. |
 | **Chameleon** | 3–8 | Everyone knows the secret word except the Chameleon. Give a one-word clue without making the word too obvious, then vote to expose the imposter. |
 | **Spyfall** | 4–12 | One or more Spies don't know the secret location. Ask questions to catch a spy — but don't reveal the location too obviously. |
+| **Wavelength** | 2–12 | One Guesser listens while every Psychic gives a clue based on the same spectrum. The Guesser picks the secret number. |
 
 ---
 
@@ -42,10 +43,6 @@ Deceptive uses a seeded PRNG to generate identical game states on every player's
 npm install
 
 # Start dev server (HTTP)
-npm run dev
-
-# Start dev server with HTTPS (requires mkcert certs in .cert/)
-# See vite.config.js for cert paths
 npm run dev
 ```
 
@@ -77,13 +74,94 @@ npm run coverage  # coverage report
 
 ```
 src/
-  engine/         # Deterministic core (PRNG, seed nav, lz-string envelope, state)
-  games/          # Game module registry + per-game folders (insider, chameleon, spyfall)
-  components/     # Screen components + shared UI primitives
-  styles/         # ThemeContext
+  engine/         # Deterministic core (PRNG, seed nav, lz-string envelope, state,
+  |               # usePersistentTimer, useLongPress)
+  games/          # Game module registry + per-game folders
+  |  index.js     # Registry: maps gameType → module
+  |  insider/     # Insider module (index.js, constants.js, words.js, components/)
+  |  chameleon/   # Chameleon module
+  |  spyfall/     # Spyfall module
+  |  wavelength/  # Wavelength module
+  components/     # Screen components (LobbyScreen, PreGameScreen, GamePlayScreen, …)
+  |  shared/      # Reusable UI primitives (Button, GlassCard, Modal, RevealShield, …)
+  styles/         # ThemeContext (game-module color tokens)
 ```
 
-Each game folder (`src/games/<name>/`) exports a module that satisfies a shared interface (`name`, `displayName`, `minPlayers`, `maxPlayers`, `getSetup()`, etc.). Adding a new game means creating a folder and registering it in `src/games/index.js` — no other files change.
+Each game folder (`src/games/<name>/`) exports a module that satisfies a standard interface:
+
+| Export | Type | Description |
+|---|---|---|
+| `name` | `string` | Internal key (matches registry key) |
+| `displayName` | `string` | Human-readable name |
+| `minPlayers` / `maxPlayers` | `number` | Valid player count range |
+| `constants` | `object` | `COLORS`, `ROLES`, `ROLE_COLORS`, `ROUND_SECONDS`, `ROLE_META` |
+| `defaultState()` | `function` | Returns game-specific state defaults for a new lobby |
+| `getTimerSeconds(state)` | `function` | Returns round duration in seconds (0 = no timer) |
+| `getSetup(players, seed, category, state)` | `function` | Deterministic role assignment; returns `Assignment[]` or `null` |
+| `encodeGameState(state)` | `function` | Encode lobby state to `Uint8Array` for the `?gs=` URL param |
+| `decodeGameState(payload)` | `function` | Reconstruct lobby state from encoded payload |
+| `GameExtras` | `ReactComponent \| null` | Game-specific UI rendered below the role card in `GamePlayScreen` |
+
+---
+
+## Adding a new deterministic game mode
+
+1. **Create the folder** `src/games/<name>/` with the files below.
+
+2. **`constants.js`** — brand colors and `ROLE_META`:
+   ```js
+   export const MY_COLORS     = { primary: '#…', … };
+   export const MY_ROLES      = { ROLE_A: 'role_a', ROLE_B: 'role_b' };
+   export const MY_ROLE_META  = {
+     role_a: { label: 'ROLE A', desc: '…', showsTimer: false },
+     role_b: { label: 'ROLE B', desc: '…', showsTimer: true  },
+   };
+   export const MY_ROUND_SECONDS = 300;
+   ```
+
+3. **`components/GameExtras.jsx`** — optional supplemental UI below the role card:
+   ```jsx
+   export function MyGameExtras({ assignment, state, roleRevealed, module }) {
+     // return null if the game needs no supplemental UI
+     return <div>…game-specific content…</div>;
+   }
+   ```
+
+4. **`index.js`** — the module itself. Must satisfy the standard interface:
+   ```js
+   import { MyGameExtras } from './components/GameExtras';
+   export const MyModule = {
+     name: 'mygame', displayName: 'My Game',
+     minPlayers: 3, maxPlayers: 10,
+     constants: { COLORS: MY_COLORS, ROLES: MY_ROLES, ROLE_META: MY_ROLE_META,
+                  ROUND_SECONDS: MY_ROUND_SECONDS },
+     defaultState:     () => ({}),
+     getTimerSeconds:  (state) => state?.roundSeconds ?? MY_ROUND_SECONDS,
+     getSetup:         (players, seed, category, state) => { /* … */ },
+     encodeGameState:  (state) => { /* return Uint8Array */ },
+     decodeGameState:  (payload) => { /* return state object */ },
+     GameExtras: MyGameExtras,
+   };
+   ```
+
+5. **Register it** in `src/games/index.js`:
+   ```js
+   import { MyModule } from './mygame/index';
+   export const GAME_REGISTRY = {
+     // existing entries …
+     mygame: MyModule,
+   };
+   ```
+
+6. **Assign a type ID** in `src/engine/gamestate.js`:
+   ```js
+   export const GAME_TYPE_IDS = {
+     // existing entries …
+     mygame: 4,   // next available 3-bit slot (0–7)
+   };
+   ```
+
+That is all — no other files need to change.
 
 ---
 
@@ -103,3 +181,4 @@ The live domain is configured via `public/CNAME` and the workflow's `cname` para
 ## License
 
 MIT
+

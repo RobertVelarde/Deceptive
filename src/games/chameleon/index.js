@@ -8,6 +8,7 @@
 import { createPRNG, deterministicShuffle } from '../../engine/prng';
 import { encodeSeed, decodeSeed, encodePlayers, decodePlayers, encodeWordList, decodeWordList } from '../../engine/gamestate';
 import { CHAMELEON_WORD_CATEGORIES } from './words';
+import { ChameleonGameExtras } from './components/GameExtras';
 
 /** Sentinel value for the custom category. Used in state.category. */
 export const CHAMELEON_CUSTOM_CATEGORY = '__custom__';
@@ -39,6 +40,9 @@ export const ChameleonModule = {
   getTimerSeconds(state) {
     return state?.roundSeconds ?? CHAMELEON_ROUND_SECONDS;
   },
+
+  /** Word grid and secret-tile highlight rendered below the role card. */
+  GameExtras: ChameleonGameExtras,
 
   constants: {
     COLORS:        CHAMELEON_COLORS,

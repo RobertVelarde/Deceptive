@@ -20,6 +20,7 @@ import {
   SPYFALL_ROUND_SECONDS,
   SPYFALL_ROLE_META,
 } from './constants';
+import { SpyfallGameExtras } from './components/GameExtras';
 
 export const SpyfallModule = {
   name:        'spyfall',
@@ -54,6 +55,9 @@ export const SpyfallModule = {
   getTimerSeconds(state) {
     return state?.roundSeconds ?? SPYFALL_ROUND_SECONDS;
   },
+
+  /** Location reference list rendered below the role card. */
+  GameExtras: SpyfallGameExtras,
 
   // ── Compact binary state encoding (for ?gs= URL param) ────────────────────
   //

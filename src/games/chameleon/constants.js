@@ -24,13 +24,11 @@ export const CHAMELEON_ROUND_SECONDS = 0;
 export const CHAMELEON_ROLE_META = {
   chameleon: {
     label:      'CHAMELEON',
-    emoji:      '🦎',
     desc:       "You don't know the secret word. Blend in, avoid detection, and find out the secret word!",
     showsTimer: false,
   },
   agent: {
     label:      'AGENT',
-    emoji:      '🔎',
     desc:       'You know the secret word. Say a word related to it, but avoid revealing it to the Chameleon!',
     showsTimer: false,
   },
