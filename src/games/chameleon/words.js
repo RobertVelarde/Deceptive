@@ -109,7 +109,7 @@ export const CHAMELEON_WORD_CATEGORIES = {
     'Monopoly', 'Scrabble', 'Mouse Trap', 'Guess Who',
     'Risk', 'Operation', 'Twister', 'Pictionary',
     'Battleship', 'Backgammon', 'Clue', 'Chess',
-    'Checkers', 'Trivial Pursuit', 'Jenga', 'Hungry Hungry Hippos'
+    'Checkers', 'Trivial Pursuit', 'Jenga', 'Wavelength'
   ],
   'Fictional Characters': [
     'Indiana Jones', 'Popeye', 'Spiderman', 'Darth Vader',

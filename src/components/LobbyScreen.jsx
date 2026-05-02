@@ -80,7 +80,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
     <div className="h-full flex flex-col items-center">
 
       {/* ── Fixed header: logo + gamemode ────────────────────────────────── */}
-      <div className="w-full max-w-sm px-3 pt-6 pb-3 flex flex-col gap-4 shrink-0">
+      <div className="w-full max-w-sm py-2 flex flex-col gap-4">
         {/* ── Section 1: Gamemode ──────────────────────────────────────────── */}
         <GlassCard className="w-full p-5 flex flex-col gap-3">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Gamemode</p>
@@ -119,8 +119,8 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
         {/* Bottom fade */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
 
-        <div ref={scrollRef} className="h-full overflow-y-auto px-3 scrollbar-hide">
-        <div className="flex flex-col gap-4 pt-1 pb-6">
+        <div ref={scrollRef} className="h-full overflow-y-auto scrollbar-hide">
+        <div className="flex flex-col gap-4 pt-1 pb-8">
 
           {/* ── Section 2: Settings ──────────────────────────────────────────── */}
           <GlassCard className="w-full p-5 flex flex-col gap-3">
@@ -170,8 +170,6 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
               );
             })()}
 
-            <div className="border-t border-white/5" />
-
           {/* Chameleon: category picker */}
           {module.categories?.length > 0 && (() => {
             const activeCategory = state.category || module.categories[0];
@@ -179,7 +177,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
 
             return (
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-600">Categories</span>
+                <span className="text-[10px] uppercase tracking-widest text-zinc-600">Category</span>
                 <div className="flex flex-wrap gap-1.5">
                   {module.categories.map((cat) => {
                     const active = activeCategory === cat;
@@ -427,11 +425,6 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
               })}
             </div>
           )}
-
-          {/* No-settings placeholder */}
-          {!hasSettings && (
-            <p className="text-zinc-600 text-xs text-center py-2">No settings for this game</p>
-          )}
         </GlassCard>
 
           {/* ── Section 3: Players ───────────────────────────────────────────── */}
@@ -497,7 +490,7 @@ export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
 
       {/* ── Fixed footer: back button ─────────────────────────────────────── */}
       {onGoHome && (
-        <div className="w-full max-w-sm px-3 pt-2 pb-2 shrink-0">
+        <div className="w-full max-w-sm pt-2 pb-2 shrink-0">
           {/* Create Lobby */}
           <Button
             size="lg"
