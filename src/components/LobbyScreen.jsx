@@ -178,15 +178,15 @@ useEffect(() => {
                   <div className="flex items-center gap-2">
                     <button
                       className="w-7 h-7 rounded-lg bg-zinc-700 text-zinc-300 text-sm font-bold hover:bg-zinc-600 disabled:opacity-30 transition-colors"
-                      onClick={() => push({ roundSeconds: Math.max(60, roundSecs - 60) })}
-                      disabled={roundSecs <= 60}
+                      onClick={() => push({ roundSeconds: Math.max(30, roundSecs - 30) })}
+                      disabled={roundSecs <= 30}
                     >−</button>
                     <span className="w-14 text-center text-sm font-mono font-bold text-zinc-200">
-                      {Math.round(roundSecs / 60)} min
+                      {Math.floor(roundSecs / 60)}m {String(roundSecs % 60).padStart(2, '0')}s
                     </span>
                     <button
                       className="w-7 h-7 rounded-lg bg-zinc-700 text-zinc-300 text-sm font-bold hover:bg-zinc-600 disabled:opacity-30 transition-colors"
-                      onClick={() => push({ roundSeconds: Math.min(1800, roundSecs + 60) })}
+                      onClick={() => push({ roundSeconds: Math.min(1800, roundSecs + 30) })}
                       disabled={roundSecs >= 1800}
                     >+</button>
                   </div>

@@ -8,7 +8,7 @@
 // no knowledge of individual game mechanics. Adding a new game requires only:
 //   1. Creating src/games/<name>/components/GameExtras.jsx
 //   2. Exporting it from the module as `GameExtras`
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme }            from '../styles/ThemeContext';
 import { getModule }           from '../games/index';
 import { GlassCard }           from './shared/GlassCard';
@@ -120,6 +120,145 @@ function RoleCard({ assignment, module, state }) {
   );
 }
 
+// ── RoundTimerCard — self-contained timer card, visible from a table ──────────
+// Edit mode uses a calculator-style digit buffer: each typed digit pushes
+// existing digits left and occupies the rightmost position, displayed as MM:SS.
+function RoundTimerCard({ timer, durationSeconds }) {
+  const [editing, setEditing] = useState(false);
+  // 4-digit buffer: digits[0..1] = minutes, digits[2..3] = seconds
+  const [digits, setDigits]   = useState('0000');
+  const inputRef = useRef(null);
+
+  const timerRatio  = durationSeconds > 0 ? timer.remaining / durationSeconds : 0;
+  const timerColor  = timer.expired
+    ? '#EF5350'
+    : timerRatio > 0.5 ? '#4CAF50' : timerRatio > 0.25 ? '#FF9800' : '#EF5350';
+  const displayMins = String(Math.floor(timer.remaining / 60)).padStart(2, '0');
+  const displaySecs = String(timer.remaining % 60).padStart(2, '0');
+  const canEdit     = !timer.running && !timer.expired;
+
+  // Derived edit values
+  const editMM    = digits.slice(0, 2);
+  const editSS    = digits.slice(2, 4);
+  const editSsNum = parseInt(editSS, 10);
+  const editTotal = parseInt(editMM, 10) * 60 + editSsNum;
+  const editValid = editTotal > 0 && editSsNum < 60;
+
+  // Focus the hidden input whenever edit mode activates
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const startEdit = () => { setDigits('0000'); setEditing(true); };
+
+  const commitEdit = () => {
+    if (editValid) timer.seek(editTotal);
+    setEditing(false);
+  };
+
+  const pushDigit = (d) => setDigits(prev => (prev + d).slice(-4));
+  const popDigit  = ()  => setDigits(prev => '0' + prev.slice(0, 3));
+
+  // Keyboard: digits push right-to-left, backspace undoes, enter/escape finish
+  const handleKeyDown = (e) => {
+    if (e.key >= '0' && e.key <= '9') { e.preventDefault(); pushDigit(e.key); }
+    else if (e.key === 'Backspace')   { e.preventDefault(); popDigit(); }
+    else if (e.key === 'Enter')       { e.preventDefault(); commitEdit(); }
+    else if (e.key === 'Escape')      { setEditing(false); }
+  };
+
+  // Mobile: watch value length changes on the tel input to infer push/pop
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (raw.length > digits.length)      pushDigit(raw[raw.length - 1]);
+    else if (raw.length < digits.length) popDigit();
+  };
+
+  const editHint = !editValid
+    ? (editSsNum >= 60 ? 'seconds must be 00–59' : 'type a duration')
+    : 'tap ✓ or press enter to set';
+
+  return (
+    <GlassCard className="p-5">
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-5 h-4">
+        <span className="text-[10px] uppercase tracking-widest text-zinc-500">Round Timer</span>
+        {!timer.expired && !editing && (
+          <button
+            onClick={timer.running ? timer.pause : timer.start}
+            className="text-xs font-semibold px-3 py-1 rounded-xl transition-all duration-200 active:scale-95 select-none"
+            style={timer.running
+              ? { background: 'rgba(158,158,158,0.15)', color: '#9E9E9E', border: '1px solid rgba(158,158,158,0.35)' }
+              : { background: 'rgba(76,175,80,0.15)',   color: '#4CAF50', border: '1px solid rgba(76,175,80,0.35)' }
+            }
+          >
+            {timer.running ? 'Pause' : 'Start'}
+          </button>
+        )}
+      </div>
+
+      {/* Time display / editor */}
+      <div className="flex items-center justify-center">
+        {timer.expired ? (
+          <span className="text-5xl font-black tracking-widest select-none" style={{ color: '#EF5350' }}>
+            TIME&apos;S UP
+          </span>
+        ) : editing ? (
+          <div className="flex items-center gap-1">
+            {/* Hidden tel input captures keyboard on desktop and mobile */}
+            <input
+              ref={inputRef}
+              type="tel"
+              inputMode="numeric"
+              value={digits}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onBlur={commitEdit}
+              className="sr-only"
+            />
+            {/* Visual display — click refocuses the hidden input */}
+            <button
+              className="flex items-baseline gap-0 text-5xl font-black tabular-nums select-none"
+              style={{ fontVariantNumeric: 'tabular-nums', cursor: 'text' }}
+              onClick={() => inputRef.current?.focus()}
+              tabIndex={-1}
+            >
+              <span style={{ color: 'white' }}>{editMM}</span>
+              <span className="text-zinc-500">:</span>
+              <span style={{ color: editSsNum < 60 ? 'white' : '#EF5350' }}>{editSS}</span>
+            </button>
+            {/* Confirm — mouseDown preventDefault keeps the hidden input focused */}
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={commitEdit}
+              className="ml-3 text-sm font-semibold px-3 py-1.5 rounded-xl active:scale-95 select-none transition-colors duration-200"
+              style={editValid
+                ? { background: 'rgba(76,175,80,0.15)', color: '#4CAF50', border: '1px solid rgba(76,175,80,0.35)' }
+                : { background: 'rgba(100,100,100,0.1)', color: '#555',    border: '1px solid rgba(100,100,100,0.2)' }
+              }
+            >
+              ✓
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={canEdit ? startEdit : undefined}
+            className="text-5xl font-black tabular-nums select-none transition-colors duration-500"
+            style={{ color: timerColor, cursor: canEdit ? 'pointer' : 'default', fontVariantNumeric: 'tabular-nums' }}
+          >
+            {displayMins}:{displaySecs}
+          </button>
+        )}
+      </div>
+
+      {/* Hint */}
+      <p className="text-center text-[10px] text-zinc-600 mt-3 select-none">
+        {timer.expired ? '\u00a0' : editing ? editHint : canEdit ? 'tap time to edit' : '\u00a0'}
+      </p>
+    </GlassCard>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) {
   const { colors } = useTheme();
@@ -138,8 +277,30 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   const timer = usePersistentTimer({
     durationSeconds,
     storageKey: timerKey,
-    autoStart:  true,
+    autoStart:  false,
   });
+
+  // ── Wake Lock — keep screen awake while the timer is running ─────────────
+  useEffect(() => {
+    if (!shouldShowTimer || !('wakeLock' in navigator)) return;
+    let lock = null;
+
+    const acquire = async () => {
+      try { lock = await navigator.wakeLock.request('screen'); } catch { /* denied or unavailable */ }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && timer.running) acquire();
+    };
+
+    if (timer.running) acquire();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      lock?.release().catch(() => {});
+    };
+  }, [timer.running, shouldShowTimer]);
 
   if (!assignments) {
     return (
@@ -162,14 +323,6 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   // Wrap navigation so the timer storage is cleared when leaving the round
   const handleNextRound   = () => { timer.reset(); onNextRound(); };
   const handleBackToLobby = () => { timer.reset(); onBackToLobby(); };
-
-  // Derived timer display values
-  const timerMins  = String(Math.floor(timer.remaining / 60)).padStart(2, '0');
-  const timerSecs  = String(timer.remaining % 60).padStart(2, '0');
-  const timerRatio = durationSeconds > 0 ? timer.remaining / durationSeconds : 0;
-  const timerColor = timer.expired
-    ? '#EF5350'
-    : timerRatio > 0.5 ? '#4CAF50' : timerRatio > 0.25 ? '#FF9800' : '#EF5350';
 
   return (
     <div className="h-full flex flex-col items-center px-4 pt-6 pb-2 gap-4 overflow-hidden">
@@ -230,35 +383,15 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
                 module={module}
               />
             )}
+
+            {/* Round timer card — only for roles with showsTimer: true */}
+            {shouldShowTimer && (
+              <RoundTimerCard timer={timer} durationSeconds={durationSeconds} />
+            )}
           </div>
           {/* Bottom fade — fades the scroll area into the page background */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
         </div>
-
-        {/* ── Round timer — shown only for roles with showsTimer: true ─────── */}
-        {shouldShowTimer && (
-          <div className="pt-3 pb-1 px-1 flex items-center gap-3">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 shrink-0">
-              Round Timer
-            </span>
-
-            {/* Time display */}
-            {timer.expired ? (
-              <span className="text-sm font-mono font-bold tracking-widest" style={{ color: '#EF5350' }}>
-                TIME&apos;S UP
-              </span>
-            ) : (
-              <span
-                className="text-sm font-mono font-bold tabular-nums tracking-widest"
-                style={{ color: timerColor }}
-              >
-                {timerMins}:{timerSecs}
-              </span>
-            )}
-
-
-          </div>
-        )}
 
         {/* Nav buttons — always pinned at bottom of card */}
         <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm">

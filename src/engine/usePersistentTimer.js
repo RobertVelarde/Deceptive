@@ -176,6 +176,23 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
     }
   }, [durationSeconds, storageKey]);
 
+  // Pause and set an arbitrary remaining time (e.g. user edits the timer value)
+  const seek = useCallback((seconds) => {
+    const clamped = Math.max(0, Math.round(seconds));
+    deadlineRef.current = null;
+    setRunning(false);
+    setRemaining(clamped);
+    if (storageKey) {
+      try {
+        if (clamped > 0) {
+          localStorage.setItem(storageKey, JSON.stringify({ remaining: clamped }));
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch { /* ignore */ }
+    }
+  }, [storageKey]);
+
   return {
     remaining,
     running,
@@ -183,5 +200,6 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
     start,
     pause,
     reset,
+    seek,
   };
 }
