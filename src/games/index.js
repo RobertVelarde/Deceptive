@@ -9,10 +9,10 @@ import { SpyfallModule }     from './spyfall/index';
 import { WavelengthModule }  from './wavelength/index';
 
 export const GAME_REGISTRY = {
+  wavelength: WavelengthModule,
   insider:    InsiderModule,
   chameleon:  ChameleonModule,
   spyfall:    SpyfallModule,
-  wavelength: WavelengthModule,
 };
 
 /** Resolve the active module by gameType; falls back to InsiderModule. */

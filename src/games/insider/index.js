@@ -54,7 +54,7 @@ export const InsiderModule = {
       type:    'segmented',
       key:     'rotatingMaster',
       label:   'Master Selection',
-      default: false,
+      default: true,
       options: [
         { value: false, label: 'Random' },
         { value: true,  label: 'Rotating' },

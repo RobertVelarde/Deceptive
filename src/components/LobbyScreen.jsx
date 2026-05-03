@@ -147,7 +147,7 @@ useEffect(() => {
         <div className="flex flex-col gap-4 pt-1 pb-8">
 
           {/* ── Settings ──────────────────────────────────────────── */}
-          <GlassCard className="w-full p-5 flex flex-col gap-3">
+          <GlassCard className="w-full p-5 flex flex-col gap-1.5">
 
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Settings</p>
 
@@ -519,7 +519,7 @@ useEffect(() => {
             ← Back
           </Button>
 
-          {/* Create Lobby */}
+          {/* Enter Lobby */}
           <Button
             size="md" className="flex-1"
             onClick={onStart}
@@ -529,7 +529,7 @@ useEffect(() => {
               ? `Need ${module.minPlayers - state.players.length} more player${module.minPlayers - state.players.length === 1 ? '' : 's'}`
               : !customTilesFilled
                 ? `Need ${16 - customWords.length} more tile${16 - customWords.length === 1 ? '' : 's'}`
-                : `Create Lobby  →`}
+                : `Enter Lobby  →`}
           </Button>
         </div>
       )}

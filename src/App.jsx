@@ -97,6 +97,17 @@ export default function App() {
     } catch { /* encoding error — leave URL as-is */ }
   }, [state]);
 
+  // ── Update document title based on current screen ────────────────────────
+  useEffect(() => {
+    if (state.status === 'pregame' || state.status === 'playing') {
+      const mod = getModule(state.gameType);
+      const gameName = mod?.displayName ?? state.gameType;
+      document.title = `${gameName} • ${state.checksum}`;
+    } else {
+      document.title = 'Deceptive';
+    }
+  }, [state.status, state.gameType, state.checksum]);
+
   // ── Persist identity so it survives page refreshes ────────────────────────
   useEffect(() => {
     if (identity) {

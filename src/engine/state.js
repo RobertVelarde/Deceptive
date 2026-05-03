@@ -2,6 +2,7 @@
 import { ENVELOPE_VERSION } from './envelope';
 import { intToSeed, SEED_MAX, generateTimeSeed } from './prng';
 export { generatePlayerId } from './gamestate';
+import { GAME_REGISTRY } from '../games/index';
 
 /** Produce a blank lobby state with a freshly randomized starting seed. */
 export function createDefaultState() {
@@ -9,7 +10,9 @@ export function createDefaultState() {
   return {
     v:            ENVELOPE_VERSION,
     players:      [],
-    gameType:     'insider',
+
+    // default to first game in the registry; will be overridden by ?gs= URL param if present
+    gameType:     Object.keys(GAME_REGISTRY)[0] ?? 'insider',
     seed:         startingSeed,
     startingSeed,
     round:        1,
