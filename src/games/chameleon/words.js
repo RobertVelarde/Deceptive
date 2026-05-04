@@ -123,5 +123,65 @@ export const CHAMELEON_WORD_CATEGORIES = {
     'Tokyo', 'Athens', 'Cairo', 'Hong Kong',
     'Chicago', 'Los Angeles', 'San Francisco', 'Jerusalem'
   ],
+  'Tattoos': [
+    'Stars', 'Angel', 'Wings', 'Dragon',
+    'Eagle', 'Fairy', 'Heart', 'Skull',
+    'Sword', 'Tiger', 'Swallows', 'Flower',
+    'Butterfly', 'Cross', 'Owl', 'Anchor'
+  ],
+  'Wedding Anniversaries': [
+    'Wood', 'China', 'Paper', 'Cotton',
+    'Bronze', 'Gold', 'Ruby', 'Diamond',
+    'Crystal', 'Flowers', 'Silk', 'Leather',
+    'Pearl', 'Coral', 'Tin', 'Wool'
+  ],
+  'Rooms' : [
+    'Kitchen', 'Hallway', 'Greenhouse', 'Bedroom',
+    'Bathroom', 'Dining Room', 'Office', 'Living Room',
+    'Attic', 'Basement', 'Porch', 'Nursery',
+    'Den', 'Bunker', 'Shed', 'Garage'
+  ],
+  'Jobs': [
+    'Fisherman', 'Lumberjack', 'Nurse', 'Waiter',
+    'Janitor', 'Secretary', 'Accountant', 'Teacher',
+    'Truck Driver', 'Security Guard', 'Chef', 'Architect',
+    'Police Officer', 'Lawyer', 'Carpenter', 'Butcher',
+  ],
+  'Civilizations': [
+    'Romans', 'Egyptians', 'Mayans', 'Mongols',
+    'Aztecs', 'Japanese', 'Persians', 'Greeks',
+    'Turks', 'Vikings', 'Incas', 'Spanish',
+    'Zulu', 'Chinese', 'Spartans', 'Aliens'
+  ],
+  'Musicals': [
+    'West Side Story', 'Cats', 'Jersey Boys', 'School of Rock',
+    'Phantom of the Opera', 'Les Misérables', 'Oliver', 'Hamilton',
+    'Chicago', '42nd Street', 'Annia', 'Book of Mormon',
+    'Lion King', 'Wicked', 'Hairspray', 'Mamma Mia'
+  ],
+  'Bands': [
+    'The Beatles', 'The Rolling Stones', 'AC/DC', 'Nirvana',
+    'Backstreet Boys', 'Guns N\' Roses', 'Queen', 'Pink Floyd',
+    'The Beach Boys', 'Red Hot Chili Peppers', 'KISS', 'Metallica',
+    'ABBA', 'The Eagles', 'The Who', 'U2'
+  ],
+  'Musical Instruments': [
+    'Electric Guitar', 'Piano', 'Violin', 'Drums',
+    'Bass Guitar', 'Saxophone', 'Cello', 'Flute',
+    'Clarinet', 'Trumpet', 'Voice', 'Ukulele',
+    'Harp', 'Bagpipes', 'Harmonica', 'Banjo'
+  ],
+  'The Rainforest': [
+    'Anteater', 'Monkey', 'Frog', 'Sloth',
+    'Butterfly', 'Iguana', 'Piranha', 'Jaguar',
+    'Ant', 'Vampire Bat', 'Toucan', 'Scorpion',
+    'Turtle', 'Tapir', 'Snake', 'River Dolphin'
+  ],
+  'Music': [
+    'Rock', 'Heavy Metal', 'Classical', 'Funk',
+    'Hip hop', 'Pop', 'Techno', 'Blues',
+    'Rap', 'Punk', 'Indie', 'Christmas',
+    'Country', 'House', 'Disco', 'Reggae'
+  ],
 };
 

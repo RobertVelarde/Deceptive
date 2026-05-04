@@ -10,12 +10,14 @@ import { encodeSeed, decodeSeed, encodePlayers, decodePlayers, encodeWordList, d
 import { CHAMELEON_WORD_CATEGORIES } from './words';
 import { ChameleonGameExtras } from './components/GameExtras';
 
-/** Sentinel value for the custom category. Used in state.category. */
+/** Sentinel value for the custom category. */
 export const CHAMELEON_CUSTOM_CATEGORY = '__custom__';
 /** Number of words in the board (fixed 4×4). */
 const CUSTOM_WORD_COUNT = 16;
-/** Byte marker that signals a custom category in the encoded payload. */
-const CUSTOM_CATEGORY_BYTE = 0xFF;
+
+/** Alphabetically-sorted list of all non-custom category names. */
+export const CHAMELEON_SORTED_CATEGORIES = Object.keys(CHAMELEON_WORD_CATEGORIES).sort();
+
 import {
   CHAMELEON_COLORS,
   CHAMELEON_ROLES,
@@ -33,7 +35,10 @@ export const ChameleonModule = {
 
   /** Default game-type-specific state fields for new lobbies. */
   defaultState() {
-    return { roundSeconds: 120 };
+    return {
+      roundSeconds:     120,
+      enabledCategories: [...CHAMELEON_SORTED_CATEGORIES],
+    };
   },
 
   /** Called by GamePlayScreen to get the timer duration. */
@@ -60,38 +65,53 @@ export const ChameleonModule = {
    *   [0]    round-1 (0-based)
    *   [1-3]  seed as big-endian uint24
    *   [4-6]  startingSeed as big-endian uint24
-   *   [7]    categoryIndex (index into CHAMELEON_WORD_CATEGORIES keys)
-   *   [8..]  encoded player list (encodePlayers format)
+   *   [7-10] uint32 big-endian bitmask of enabled non-custom categories
+   *          (bit i = CHAMELEON_SORTED_CATEGORIES[i] is enabled)
+   *   [11]   flags: bit 0 = custom category is enabled
+   *   [12..] word bytes (only present if custom flag is set), then player bytes
    */
-  encodeGameState({ players, seed, round, startingSeed, category, customWords }) {
-    const isCustom       = category === CHAMELEON_CUSTOM_CATEGORY;
-    const categoryNames  = Object.keys(CHAMELEON_WORD_CATEGORIES);
-    const catIdx         = isCustom
-      ? CUSTOM_CATEGORY_BYTE
-      : Math.max(0, categoryNames.indexOf(category ?? ''));
-    const seedBytes      = encodeSeed(seed);
+  encodeGameState({ players, seed, round, startingSeed, enabledCategories, customWords }) {
+    const enabled      = enabledCategories ?? CHAMELEON_SORTED_CATEGORIES;
+    const customOn     = enabled.includes(CHAMELEON_CUSTOM_CATEGORY);
+    const seedBytes    = encodeSeed(seed);
     const startSeedBytes = encodeSeed(startingSeed ?? seed);
-    const playerBytes    = encodePlayers(players);
+    const playerBytes  = encodePlayers(players);
 
-    if (isCustom) {
+    let catMask = 0;
+    for (let i = 0; i < CHAMELEON_SORTED_CATEGORIES.length; i++) {
+      if (enabled.includes(CHAMELEON_SORTED_CATEGORIES[i])) catMask |= (1 << i);
+    }
+    catMask = catMask >>> 0; // ensure unsigned
+
+    const flagByte = customOn ? 0x01 : 0x00;
+
+    if (customOn) {
       const words = Array.from({ length: CUSTOM_WORD_COUNT }, (_, i) => customWords?.[i] ?? '');
       const wordBytes = encodeWordList(words);
-      const buf = new Uint8Array(8 + wordBytes.length + playerBytes.length);
+      const buf = new Uint8Array(12 + wordBytes.length + playerBytes.length);
       buf[0] = (round - 1) & 0xFF;
       buf[1] = seedBytes[0]; buf[2] = seedBytes[1]; buf[3] = seedBytes[2];
       buf[4] = startSeedBytes[0]; buf[5] = startSeedBytes[1]; buf[6] = startSeedBytes[2];
-      buf[7] = CUSTOM_CATEGORY_BYTE;
-      buf.set(wordBytes, 8);
-      buf.set(playerBytes, 8 + wordBytes.length);
+      buf[7]  = (catMask >>> 24) & 0xFF;
+      buf[8]  = (catMask >>> 16) & 0xFF;
+      buf[9]  = (catMask >>>  8) & 0xFF;
+      buf[10] =  catMask         & 0xFF;
+      buf[11] = flagByte;
+      buf.set(wordBytes, 12);
+      buf.set(playerBytes, 12 + wordBytes.length);
       return buf;
     }
 
-    const buf = new Uint8Array(8 + playerBytes.length);
+    const buf = new Uint8Array(12 + playerBytes.length);
     buf[0] = (round - 1) & 0xFF;
     buf[1] = seedBytes[0]; buf[2] = seedBytes[1]; buf[3] = seedBytes[2];
     buf[4] = startSeedBytes[0]; buf[5] = startSeedBytes[1]; buf[6] = startSeedBytes[2];
-    buf[7] = catIdx & 0xFF;
-    buf.set(playerBytes, 8);
+    buf[7]  = (catMask >>> 24) & 0xFF;
+    buf[8]  = (catMask >>> 16) & 0xFF;
+    buf[9]  = (catMask >>>  8) & 0xFF;
+    buf[10] =  catMask         & 0xFF;
+    buf[11] = flagByte;
+    buf.set(playerBytes, 12);
     return buf;
   },
 
@@ -103,20 +123,31 @@ export const ChameleonModule = {
     const round        = (payload[0] & 0xFF) + 1;
     const seed         = decodeSeed(payload[1], payload[2], payload[3]);
     const startingSeed = decodeSeed(payload[4], payload[5], payload[6]);
-    const catIdx       = payload[7] & 0xFF;
+    const catMask      = (
+      ((payload[7]  & 0xFF) << 24) |
+      ((payload[8]  & 0xFF) << 16) |
+      ((payload[9]  & 0xFF) <<  8) |
+       (payload[10] & 0xFF)
+    ) >>> 0;
+    const flagByte     = payload[11] & 0xFF;
+    const customOn     = Boolean(flagByte & 0x01);
 
-    if (catIdx === CUSTOM_CATEGORY_BYTE) {
-      const { words, bitsRead } = decodeWordList(payload, CUSTOM_WORD_COUNT, 8 * 8);
+    const enabledCategories = [
+      ...CHAMELEON_SORTED_CATEGORIES.filter((_, i) => (catMask >>> i) & 1),
+      ...(customOn ? [CHAMELEON_CUSTOM_CATEGORY] : []),
+    ];
+
+    if (customOn) {
+      const { words, bitsRead } = decodeWordList(payload, CUSTOM_WORD_COUNT, 12 * 8);
       const wordByteLen = Math.ceil(bitsRead / 8);
-      const { players } = decodePlayers(payload, 8 + wordByteLen);
+      const { players } = decodePlayers(payload, 12 + wordByteLen);
       return { gameType: 'chameleon', seed, startingSeed, round,
-               category: CHAMELEON_CUSTOM_CATEGORY, customWords: words, players, status: 'lobby' };
+               enabledCategories, customWords: words, players, status: 'lobby' };
     }
 
-    const categoryNames = Object.keys(CHAMELEON_WORD_CATEGORIES);
-    const category      = categoryNames[catIdx] ?? categoryNames[0];
-    const { players }   = decodePlayers(payload, 8);
-    return { gameType: 'chameleon', seed, startingSeed, round, category, players, status: 'lobby' };
+    const { players } = decodePlayers(payload, 12);
+    return { gameType: 'chameleon', seed, startingSeed, round,
+             enabledCategories, players, status: 'lobby' };
   },
 
   /**
@@ -124,18 +155,25 @@ export const ChameleonModule = {
    * The Chameleon receives word: null; Agents receive the secret word.
    * Same (players, seedString) always yields the exact same result.
    */
-  getSetup(players, seedString, category = '', state = {}) {
+  getSetup(players, seedString, _category = '', state = {}) {
     if (players.length < 3) return null;
 
+    const enabled = (state.enabledCategories ?? CHAMELEON_SORTED_CATEGORIES)
+      .filter((c) => c === CHAMELEON_CUSTOM_CATEGORY || CHAMELEON_WORD_CATEGORIES[c]);
+    if (enabled.length === 0) return null;
+
+    // Pick a category deterministically from the enabled set
+    const catPrng     = createPRNG(seedString + '_C');
+    const pickedCat   = catPrng.nextFrom(enabled);
+
     let wordGrid;
-    if (category === CHAMELEON_CUSTOM_CATEGORY && state.customWords?.length === CUSTOM_WORD_COUNT) {
+    if (pickedCat === CHAMELEON_CUSTOM_CATEGORY && state.customWords?.length === CUSTOM_WORD_COUNT) {
       wordGrid = state.customWords;
+    } else if (pickedCat === CHAMELEON_CUSTOM_CATEGORY) {
+      // Custom selected but words not set — fall back to first real category
+      wordGrid = CHAMELEON_WORD_CATEGORIES[CHAMELEON_SORTED_CATEGORIES[0]];
     } else {
-      const categoryNames = Object.keys(CHAMELEON_WORD_CATEGORIES);
-      const categoryKey   = (category && CHAMELEON_WORD_CATEGORIES[category])
-        ? category
-        : categoryNames[0];
-      wordGrid = CHAMELEON_WORD_CATEGORIES[categoryKey];
+      wordGrid = CHAMELEON_WORD_CATEGORIES[pickedCat];
     }
 
     const prng     = createPRNG(seedString);
@@ -158,10 +196,9 @@ export const ChameleonModule = {
 
   /** Returns a list of { label, value } pairs for the pre-game settings summary. */
   getSettingsSummary(state) {
-    const categoryNames = Object.keys(CHAMELEON_WORD_CATEGORIES);
-    const cat = state.category === CHAMELEON_CUSTOM_CATEGORY
-      ? 'Custom'
-      : (state.category || categoryNames[0]);
-    return [{ label: 'Categories', value: cat }];
+    const enabled      = state.enabledCategories ?? CHAMELEON_SORTED_CATEGORIES;
+    const nonCustom    = enabled.filter((c) => c !== CHAMELEON_CUSTOM_CATEGORY);
+    const total        = CHAMELEON_SORTED_CATEGORIES.length;
+    return [{ label: 'Categories', value: `${nonCustom.length + (enabled.includes(CHAMELEON_CUSTOM_CATEGORY) ? 1 : 0)}` }];
   },
 };

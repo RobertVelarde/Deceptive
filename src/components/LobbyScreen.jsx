@@ -10,7 +10,7 @@ import { Button }                       from './shared/Button';
 import { GlassCard }                    from './shared/GlassCard';
 import { WordGrid }                     from './shared/WordGrid';
 import { calculateChecksum }            from '../engine/envelope';
-import { CHAMELEON_CUSTOM_CATEGORY }    from '../games/chameleon/index';
+import { CHAMELEON_CUSTOM_CATEGORY, CHAMELEON_SORTED_CATEGORIES } from '../games/chameleon/index';
 import { CHAMELEON_WORD_CATEGORIES }    from '../games/chameleon/words';
 
 export function LobbyScreen({ state, onStateChange, onStart, onGoHome }) {
@@ -69,12 +69,22 @@ useEffect(() => {
   const removePlayer = (id) =>
     push({ players: state.players.filter((p) => p.id !== id) });
 
-  const canStart = state.players.length >= module.minPlayers;
-
-  // Chameleon custom: need all 16 tiles filled
-  const isCustomChameleon = state.gameType === 'chameleon' && state.category === CHAMELEON_CUSTOM_CATEGORY;
+  // Chameleon: multi-category state
+  const enabledCategories = state.gameType === 'chameleon'
+    ? (state.enabledCategories ?? CHAMELEON_SORTED_CATEGORIES)
+    : [];
+  const canStart = state.players.length >= module.minPlayers &&
+    (state.gameType !== 'chameleon' || enabledCategories.length > 0);
+  const isCustomChameleon = state.gameType === 'chameleon' && enabledCategories.includes(CHAMELEON_CUSTOM_CATEGORY);
   const customWords = state.customWords ?? [];
   const customTilesFilled = !isCustomChameleon || customWords.length === 16;
+
+  const toggleCategory = (cat) => {
+    const next = enabledCategories.includes(cat)
+      ? enabledCategories.filter((c) => c !== cat)
+      : [...enabledCategories, cat];
+    push({ enabledCategories: next });
+  };
 
   // ── Spyfall-specific derived values (used in settings tab) ───────────────
   const enabledLocations = state.enabledLocations ?? module.locations ?? [];
@@ -194,56 +204,65 @@ useEffect(() => {
               );
             })()}
 
-          {/* Chameleon: category picker */}
+          {/* Chameleon: multi-category picker */}
           {module.categories?.length > 0 && (() => {
-            const activeCategory = state.category || module.categories[0];
-            const isCustom       = activeCategory === CHAMELEON_CUSTOM_CATEGORY;
+            const isCustom = enabledCategories.includes(CHAMELEON_CUSTOM_CATEGORY);
+            const nonCustomEnabled = enabledCategories.filter((c) => c !== CHAMELEON_CUSTOM_CATEGORY);
+            const total = CHAMELEON_SORTED_CATEGORIES.length;
 
             return (
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-600">Category</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-600">
+                    Categories
+                    <span className="ml-1.5 text-zinc-700 normal-case tracking-normal">
+                      {nonCustomEnabled.length + (isCustom ? 1 : 0)}/{total + (isCustom ? 1 : 0)}
+                    </span>
+                  </span>
+                  <div className="flex gap-3">
+                    <button
+                      className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                      onClick={() => push({ enabledCategories: [...CHAMELEON_SORTED_CATEGORIES, ...(isCustom ? [CHAMELEON_CUSTOM_CATEGORY] : [])] })}
+                    >All</button>
+                    <button
+                      className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                      onClick={() => push({ enabledCategories: [] })}
+                    >None</button>
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {module.categories.map((cat) => {
-                    const active = activeCategory === cat;
+                  {CHAMELEON_SORTED_CATEGORIES.map((cat) => {
+                    const active = enabledCategories.includes(cat);
                     return (
                       <button
                         key={cat}
-                        onClick={() => push({ category: cat })}
+                        onClick={() => toggleCategory(cat)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                           active ? 'text-white' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/60'
                         }`}
-                        style={active ? { backgroundColor: colors.primary } : undefined}
+                        style={active ? { backgroundColor: colors.primary + 'CC' } : undefined}
                       >
                         {cat}
                       </button>
                     );
                   })}
-                  {/* Custom category button */}
+                  {/* Custom category button — always at the end */}
                   <button
-                    onClick={() => push({
-                      category: CHAMELEON_CUSTOM_CATEGORY,
-                      customWords: state.customWords ?? [],
-                    })}
+                    onClick={() => {
+                      if (isCustom) {
+                        push({ enabledCategories: enabledCategories.filter((c) => c !== CHAMELEON_CUSTOM_CATEGORY) });
+                      } else {
+                        push({ enabledCategories: [...enabledCategories, CHAMELEON_CUSTOM_CATEGORY], customWords: state.customWords ?? [] });
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                       isCustom ? 'text-white' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/60'
                     }`}
-                    style={isCustom ? { backgroundColor: colors.primary } : undefined}
+                    style={isCustom ? { backgroundColor: colors.primary + 'CC' } : undefined}
                   >
                     Custom
                   </button>
                 </div>
-
-                {/* Non-custom: show a preview of the word grid */}
-                {!isCustom && (() => {
-                  const words = CHAMELEON_WORD_CATEGORIES[activeCategory] ?? [];
-                  if (!words.length) return null;
-                  return (
-                    <><span className="text-[10px] uppercase tracking-widest text-zinc-600 pt-2">Tiles</span>
-                    <div className="mt-1">
-                      <WordGrid words={words} seed={state.startingSeed ?? state.seed} />
-                    </div></>
-                  );
-                })()}
 
                 {/* Custom: expanding tile list */}
                 {isCustomChameleon && (() => {

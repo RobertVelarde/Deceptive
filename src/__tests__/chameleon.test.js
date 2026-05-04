@@ -1,6 +1,6 @@
 // src/__tests__/chameleon.test.js — Unit tests for the Chameleon game module
 import { describe, it, expect } from 'vitest';
-import { ChameleonModule, CHAMELEON_CUSTOM_CATEGORY } from '../games/chameleon/index';
+import { ChameleonModule, CHAMELEON_CUSTOM_CATEGORY, CHAMELEON_SORTED_CATEGORIES } from '../games/chameleon/index';
 import { CHAMELEON_WORD_CATEGORIES } from '../games/chameleon/words';
 import {
   CHAMELEON_ROLES,
@@ -80,6 +80,10 @@ describe('ChameleonModule shape', () => {
   it('categories array matches CHAMELEON_WORD_CATEGORIES keys', () => {
     expect(ChameleonModule.categories).toEqual(Object.keys(CHAMELEON_WORD_CATEGORIES));
   });
+
+  it('CHAMELEON_SORTED_CATEGORIES is all category keys sorted alphabetically', () => {
+    expect(CHAMELEON_SORTED_CATEGORIES).toEqual([...Object.keys(CHAMELEON_WORD_CATEGORIES)].sort());
+  });
 });
 
 // ── defaultState ────────────────────────────────────────────────────────────
@@ -93,13 +97,20 @@ describe('ChameleonModule.defaultState()', () => {
     expect(Number.isInteger(roundSeconds)).toBe(true);
     expect(roundSeconds).toBeGreaterThan(0);
   });
+
+  it('contains enabledCategories with all non-custom categories by default', () => {
+    const { enabledCategories } = ChameleonModule.defaultState();
+    expect(Array.isArray(enabledCategories)).toBe(true);
+    expect(enabledCategories).toEqual(CHAMELEON_SORTED_CATEGORIES);
+    expect(enabledCategories).not.toContain(CHAMELEON_CUSTOM_CATEGORY);
+  });
 });
 
 // ── getSetup — player count validation ─────────────────────────────────────
 
 describe('ChameleonModule.getSetup() player count validation', () => {
   const cat   = Object.keys(CHAMELEON_WORD_CATEGORIES)[0];
-  const state = {};
+  const state = { enabledCategories: [cat] };
 
   it('returns null for 0 players', () =>
     expect(ChameleonModule.getSetup([], 'AB12', cat, state)).toBeNull());
@@ -113,13 +124,16 @@ describe('ChameleonModule.getSetup() player count validation', () => {
   it('returns an assignment for the maximum player count', () =>
     expect(ChameleonModule.getSetup(makePlayers(ChameleonModule.maxPlayers), 'AB12', cat, state))
       .not.toBeNull());
+
+  it('returns null when enabledCategories is empty', () =>
+    expect(ChameleonModule.getSetup(makePlayers(4), 'AB12', '', { enabledCategories: [] })).toBeNull());
 });
 
 // ── getSetup — role assignment rules ───────────────────────────────────────
 
 describe('ChameleonModule.getSetup() role assignment', () => {
   const cat   = Object.keys(CHAMELEON_WORD_CATEGORIES)[0];
-  const state = {};
+  const state = { enabledCategories: [cat] };
 
   it('returns exactly one assignment per player', () => {
     const players = makePlayers(5);
@@ -152,7 +166,7 @@ describe('ChameleonModule.getSetup() role assignment', () => {
 
 describe('ChameleonModule.getSetup() word visibility', () => {
   const cat   = Object.keys(CHAMELEON_WORD_CATEGORIES)[0];
-  const state = {};
+  const state = { enabledCategories: [cat] };
 
   it('AGENT receives the secret word', () => {
     const result = ChameleonModule.getSetup(makePlayers(4), 'AB12', cat, state);
@@ -193,7 +207,7 @@ describe('ChameleonModule.getSetup() word visibility', () => {
 describe('ChameleonModule.getSetup() determinism', () => {
   const cat     = Object.keys(CHAMELEON_WORD_CATEGORIES)[0];
   const players = makePlayers(5);
-  const state   = {};
+  const state   = { enabledCategories: [cat] };
 
   it('same seed → identical result on repeat calls', () => {
     const r1 = ChameleonModule.getSetup(players, 'SEED', cat, state);
@@ -214,10 +228,10 @@ describe('ChameleonModule encode/decode round-trip', () => {
   const players = makePlayers(3);
   const BASE    = {
     players,
-    seed:         'AB12',
-    startingSeed: 'AB12',
-    round:        1,
-    category:     cat,
+    seed:              'AB12',
+    startingSeed:      'AB12',
+    round:             1,
+    enabledCategories: [cat],
   };
 
   function roundTrip(state) {
@@ -233,8 +247,18 @@ describe('ChameleonModule encode/decode round-trip', () => {
   it('preserves startingSeed', () =>
     expect(roundTrip(BASE).startingSeed).toBe('AB12'));
 
-  it('preserves category', () =>
-    expect(roundTrip(BASE).category).toBe(cat));
+  it('preserves enabledCategories', () =>
+    expect(roundTrip(BASE).enabledCategories).toEqual([cat]));
+
+  it('preserves multiple enabled categories', () => {
+    const multi = { ...BASE, enabledCategories: CHAMELEON_SORTED_CATEGORIES.slice(0, 5) };
+    expect(roundTrip(multi).enabledCategories).toEqual(CHAMELEON_SORTED_CATEGORIES.slice(0, 5));
+  });
+
+  it('preserves all enabled categories', () => {
+    const all = { ...BASE, enabledCategories: [...CHAMELEON_SORTED_CATEGORIES] };
+    expect(roundTrip(all).enabledCategories).toEqual(CHAMELEON_SORTED_CATEGORIES);
+  });
 
   it('preserves all player names', () => {
     const decoded = roundTrip(BASE);
@@ -248,15 +272,30 @@ describe('ChameleonModule encode/decode round-trip', () => {
   it('sets status to "lobby" on decode', () =>
     expect(roundTrip(BASE).status).toBe('lobby'));
 
-  it('preserves custom words', () => {
+  it('preserves custom words when custom is enabled', () => {
     const customWords = [
       'APPLE', 'BRIDGE', 'CASTLE', 'DESERT',
       'EAGLE', 'FOREST', 'GARDEN', 'HARBOR',
       'ISLAND', 'JUNGLE', 'KITTEN', 'LEMON',
       'MANGO', 'NAPKIN', 'ORANGE', 'PLANET',
     ];
-    const decoded = roundTrip({ ...BASE, category: CHAMELEON_CUSTOM_CATEGORY, customWords });
-    expect(decoded.category).toBe(CHAMELEON_CUSTOM_CATEGORY);
+    const state   = { ...BASE, enabledCategories: [CHAMELEON_CUSTOM_CATEGORY], customWords };
+    const decoded = roundTrip(state);
+    expect(decoded.enabledCategories).toContain(CHAMELEON_CUSTOM_CATEGORY);
+    expect(decoded.customWords).toEqual(customWords);
+  });
+
+  it('encodes custom alongside regular categories', () => {
+    const customWords = [
+      'APPLE', 'BRIDGE', 'CASTLE', 'DESERT',
+      'EAGLE', 'FOREST', 'GARDEN', 'HARBOR',
+      'ISLAND', 'JUNGLE', 'KITTEN', 'LEMON',
+      'MANGO', 'NAPKIN', 'ORANGE', 'PLANET',
+    ];
+    const state   = { ...BASE, enabledCategories: [cat, CHAMELEON_CUSTOM_CATEGORY], customWords };
+    const decoded = roundTrip(state);
+    expect(decoded.enabledCategories).toContain(cat);
+    expect(decoded.enabledCategories).toContain(CHAMELEON_CUSTOM_CATEGORY);
     expect(decoded.customWords).toEqual(customWords);
   });
 });
@@ -280,28 +319,40 @@ describe('ChameleonModule.getTimerSeconds()', () => {
 // ── getSettingsSummary ──────────────────────────────────────────────────────
 
 describe('ChameleonModule.getSettingsSummary()', () => {
-  const cat   = Object.keys(CHAMELEON_WORD_CATEGORIES)[0];
-  const state = { category: cat };
+  const total = CHAMELEON_SORTED_CATEGORIES.length;
 
   it('returns a non-empty array', () =>
-    expect(ChameleonModule.getSettingsSummary(state).length).toBeGreaterThan(0));
+    expect(ChameleonModule.getSettingsSummary({ enabledCategories: CHAMELEON_SORTED_CATEGORIES }).length).toBeGreaterThan(0));
 
   it('each entry has label and value', () => {
-    for (const entry of ChameleonModule.getSettingsSummary(state)) {
+    for (const entry of ChameleonModule.getSettingsSummary({ enabledCategories: CHAMELEON_SORTED_CATEGORIES })) {
       expect(entry).toHaveProperty('label');
       expect(entry).toHaveProperty('value');
     }
   });
 
-  it('includes a Categories entry matching the active category', () => {
-    const entry = ChameleonModule.getSettingsSummary(state)
+  it('includes a Categories entry showing count of enabled non-custom categories', () => {
+    const enabled = CHAMELEON_SORTED_CATEGORIES.slice(0, 5);
+    const entry = ChameleonModule.getSettingsSummary({ enabledCategories: enabled })
       .find((e) => e.label === 'Categories');
-    expect(entry?.value).toBe(cat);
+    expect(entry?.value).toBe(`5`);
   });
 
-  it('labels custom category as "Custom"', () => {
-    const entry = ChameleonModule.getSettingsSummary({ category: CHAMELEON_CUSTOM_CATEGORY })
+  it('shows full count when all categories enabled', () => {
+    const entry = ChameleonModule.getSettingsSummary({ enabledCategories: CHAMELEON_SORTED_CATEGORIES })
       .find((e) => e.label === 'Categories');
-    expect(entry?.value).toBe('Custom');
+    expect(entry?.value).toBe(`${total}`);
+  });
+
+  it('shows 0 count when only custom is enabled', () => {
+    const entry = ChameleonModule.getSettingsSummary({ enabledCategories: [CHAMELEON_CUSTOM_CATEGORY] })
+      .find((e) => e.label === 'Categories');
+    expect(entry?.value).toBe(`1`);
+  });
+
+  it('defaults to all categories when enabledCategories is missing', () => {
+    const entry = ChameleonModule.getSettingsSummary({})
+      .find((e) => e.label === 'Categories');
+    expect(entry?.value).toBe(`${total}`);
   });
 });
