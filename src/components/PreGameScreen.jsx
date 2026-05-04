@@ -100,7 +100,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
           </h1>
         </div>
 
-        <GlassCard className="w-full max-w-sm p-6 flex flex-col gap-5">
+        <GlassCard className="w-full max-w-md p-6 flex flex-col gap-5">
           <div className="flex flex-row gap-2 w-full">
             {/* Playing as — half-width button; long-press to trigger change-identity warning */}
             <button

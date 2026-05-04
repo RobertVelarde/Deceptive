@@ -55,12 +55,12 @@ export function HomeScreen({ onCreateLobby, onJoinLobby }) {
           Deceptive
         </h1>
         <p className="text-zinc-600 text-xs tracking-[0.3em] uppercase mt-3">
-          Social deduction · Local multiplayer
+          Social Deduction · Multiplayer
         </p>
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-col gap-3 w-full max-w-sm relative z-10">
+      <div className="flex flex-col gap-3 w-full max-w-md relative z-10">
         <button
           onClick={onCreateLobby}
           className="py-4 rounded-2xl text-base font-bold text-white shadow-lg hover:brightness-110 active:scale-95"

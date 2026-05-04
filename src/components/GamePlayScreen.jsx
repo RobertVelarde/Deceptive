@@ -305,7 +305,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   if (!assignments) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <GlassCard className="p-8 text-center max-w-sm w-full">
+        <GlassCard className="p-8 text-center max-w-md w-full">
           <p className="text-zinc-400 mb-4">
             Not enough players for <strong>{module.displayName}</strong>.
           </p>
@@ -327,7 +327,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   return (
     <div className="h-full flex flex-col items-center p-4 gap-4 overflow-hidden">
       {/* Header — fixed, never scrolls */}
-      <div className="w-full max-w-sm select-none shrink-0 flex items-center justify-between gap-3">
+      <div className="w-full max-w-md select-none shrink-0 flex items-center justify-between gap-3">
         {/* Left: game + round — primary hierarchy */}
         <div>
           <h1 className="text-2xl font-black leading-none" style={{ color: colors.primary }}>
@@ -351,7 +351,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
       </div>
 
       {/* Card only as big as the content, centered vertically */}
-      <div className="w-full max-w-sm flex flex-col flex-1">
+      <div className="w-full max-w-md flex flex-col flex-1">
 
         {/* Scrollable interior — relative wrapper enables the bottom-fade overlay */}
         <div className="relative flex-1 min-h-0">
@@ -394,7 +394,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
         </div>
 
         {/* Nav buttons — always pinned at bottom of card */}
-        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm">
+        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-md">
           <Button variant="secondary" size="md" className="flex-1 " onClick={handleBackToLobby}>
             ← Pre-Round
           </Button>

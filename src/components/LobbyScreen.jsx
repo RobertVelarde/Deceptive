@@ -111,7 +111,7 @@ useEffect(() => {
     <div className="h-full flex flex-col items-center p-4">
 
       {/* ── Fixed header: logo + gamemode ────────────────────────────────── */}
-      <div className="w-full max-w-sm pb-2 flex flex-col gap-4">
+      <div className="w-full max-w-md pb-2 flex flex-col gap-4">
         {/* ── Gamemode ──────────────────────────────────────────── */}
         <GlassCard className="w-full p-5 flex flex-col gap-3">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Gamemode</p>
@@ -149,7 +149,7 @@ useEffect(() => {
       </div>
 
       {/* ── Scrollable body: settings + players ──────────────────────────── */}
-      <div className="flex-1 min-h-0 relative w-full max-w-sm">
+      <div className="flex-1 min-h-0 relative w-full max-w-md">
         {/* Bottom fade */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
 
@@ -530,7 +530,7 @@ useEffect(() => {
 
       {/* ── Fixed footer: back button ─────────────────────────────────────── */}
       {onGoHome && (
-        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm">
+        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-md">
           <Button
             variant="secondary" size="md" className="flex-1 "
             onClick={onGoHome}
@@ -545,9 +545,9 @@ useEffect(() => {
             disabled={!canStart || !customTilesFilled}
           >
             {!canStart
-              ? `Need ${module.minPlayers - state.players.length} more player${module.minPlayers - state.players.length === 1 ? '' : 's'}`
+              ? `Add more players`
               : !customTilesFilled
-                ? `Need ${16 - customWords.length} more tile${16 - customWords.length === 1 ? '' : 's'}`
+                ? `Add more tiles`
                 : `Enter Lobby  →`}
           </Button>
         </div>
