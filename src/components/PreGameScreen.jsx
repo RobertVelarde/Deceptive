@@ -280,7 +280,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
                 <p className="text-zinc-500 text-sm text-center py-4">No categories enabled</p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto scrollbar-hide">
+                  <div className="flex flex-wrap gap-1.5 max-h-60 overflow-y-auto scrollbar-hide">
                     {listCategories.map((cat) => {
                       const label = cat === CHAMELEON_CUSTOM_CATEGORY ? 'Custom' : cat;
                       const isSelected = categoryPreview === cat;
@@ -288,8 +288,8 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
                         <button
                           key={cat}
                           onClick={() => setCategoryPreview(isSelected ? null : cat)}
-                          className={`px-3 py-2 rounded-xl text-xs font-medium text-center transition-all ${isSelected ? 'text-white' : 'bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/60'
-                            }`}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                          isSelected ? 'text-white' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/60'}`}
                           style={isSelected ? { backgroundColor: colors.primary + 'CC' } : undefined}
                         >
                           {label}
@@ -326,11 +326,11 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
           {(state.enabledLocations ?? []).length === 0 ? (
             <p className="text-zinc-500 text-sm text-center py-4">No locations enabled</p>
           ) : (
-            <div className="grid grid-cols-2 gap-1.5 max-h-80 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-wrap gap-1.5 max-h-100 overflow-y-auto scrollbar-hide">
               {(state.enabledLocations ?? []).map((loc) => (
                 <div
                   key={loc}
-                  className="px-3 py-2 rounded-xl text-xs font-medium text-center bg-zinc-800/60 text-zinc-300"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-800/60 text-zinc-400"
                 >
                   {loc}
                 </div>

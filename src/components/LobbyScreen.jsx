@@ -108,10 +108,10 @@ useEffect(() => {
     (module.settingsSchema?.length > 0);
 
   return (
-    <div className="h-full flex flex-col items-center">
+    <div className="h-full flex flex-col items-center p-4">
 
       {/* ── Fixed header: logo + gamemode ────────────────────────────────── */}
-      <div className="w-full max-w-sm py-2 flex flex-col gap-4">
+      <div className="w-full max-w-sm pb-2 flex flex-col gap-4">
         {/* ── Gamemode ──────────────────────────────────────────── */}
         <GlassCard className="w-full p-5 flex flex-col gap-3">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Gamemode</p>
@@ -391,15 +391,15 @@ useEffect(() => {
                     >None</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {module.locations.map((loc) => {
                     const on = enabledLocations.includes(loc);
                     return (
                       <button
                         key={loc}
                         onClick={() => toggleLocation(loc)}
-                        className={`px-2 py-1.5 rounded-xl text-xs font-medium text-center transition-all ${
-                          on ? 'text-white' : 'bg-zinc-800/60 text-zinc-500 hover:bg-zinc-700/60'
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                          on ? 'text-white' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/60'
                         }`}
                         style={on ? { backgroundColor: colors.primary + 'CC' } : undefined}
                       >
@@ -530,7 +530,7 @@ useEffect(() => {
 
       {/* ── Fixed footer: back button ─────────────────────────────────────── */}
       {onGoHome && (
-        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm pb-2">
+        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-sm">
           <Button
             variant="secondary" size="md" className="flex-1 "
             onClick={onGoHome}

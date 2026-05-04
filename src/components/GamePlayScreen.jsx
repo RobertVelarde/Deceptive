@@ -325,7 +325,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
   const handleBackToLobby = () => { timer.reset(); onBackToLobby(); };
 
   return (
-    <div className="h-full flex flex-col items-center px-4 pt-6 pb-2 gap-4 overflow-hidden">
+    <div className="h-full flex flex-col items-center p-4 gap-4 overflow-hidden">
       {/* Header — fixed, never scrolls */}
       <div className="w-full max-w-sm select-none shrink-0 flex items-center justify-between gap-3">
         {/* Left: game + round — primary hierarchy */}
@@ -351,7 +351,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
       </div>
 
       {/* Card only as big as the content, centered vertically */}
-      <div className="w-full max-w-sm flex flex-col overflow-hidden flex-1">
+      <div className="w-full max-w-sm flex flex-col flex-1">
 
         {/* Scrollable interior — relative wrapper enables the bottom-fade overlay */}
         <div className="relative flex-1 min-h-0">

@@ -25,7 +25,7 @@ export function WordGrid({ words = [], seed, secretWord, roleColor }) {
           <div
             key={w}
             className={`rounded-lg px-1 py-2 text-center text-[10px] font-bold leading-tight transition-all
-              flex items-center justify-center ${
+              flex items-center justify-center min-h-[50px] ${
               isSecret
                 ? 'text-white'
                 : 'bg-zinc-800/60 text-zinc-400 border border-white/5'
