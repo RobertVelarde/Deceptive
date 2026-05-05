@@ -351,7 +351,7 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
       </div>
 
       {/* Card only as big as the content, centered vertically */}
-      <div className="w-full max-w-md flex flex-col flex-1">
+      <div className="w-full max-w-md flex flex-col flex-1 min-h-0">
 
         {/* Scrollable interior — relative wrapper enables the bottom-fade overlay */}
         <div className="relative flex-1 min-h-0">
@@ -374,6 +374,11 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
               </div>
             )}
 
+            {/* Round timer card — only for roles with showsTimer: true */}
+            {shouldShowTimer && (
+              <RoundTimerCard timer={timer} durationSeconds={durationSeconds} />
+            )}
+
             {/* Game-specific supplemental content — delegated to the active module */}
             {myAssignment && module.GameExtras && (
               <module.GameExtras
@@ -382,11 +387,6 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
                 roleRevealed={roleRevealed}
                 module={module}
               />
-            )}
-
-            {/* Round timer card — only for roles with showsTimer: true */}
-            {shouldShowTimer && (
-              <RoundTimerCard timer={timer} durationSeconds={durationSeconds} />
             )}
           </div>
           {/* Bottom fade — fades the scroll area into the page background */}
