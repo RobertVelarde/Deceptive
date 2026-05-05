@@ -43,7 +43,7 @@ export function SpyfallReveal({ location, civilianRole, disabled = false }) {
             className="text-2xl font-black tracking-tight"
             style={{ color: revealed ? 'white' : 'rgba(161,161,170,0.22)' }}
           >
-            {revealed ? (civilianRole ? cap(civilianRole) : 'Spy') : '••••••••'}
+            {!civilianRole ? 'Spy' : (revealed ? cap(civilianRole) : '••••••••') }
           </p>
         </div>
 
