@@ -181,6 +181,8 @@ export const ChameleonModule = {
     const shuffled = deterministicShuffle(players, prng);
     const word     = wordPrng.nextFrom(wordGrid);
 
+    const categoryLabel = pickedCat === CHAMELEON_CUSTOM_CATEGORY ? 'Custom' : pickedCat;
+
     return shuffled.map((player, i) => {
       const role = i === 0 ? CHAMELEON_ROLES.CHAMELEON : CHAMELEON_ROLES.AGENT;
       return {
@@ -188,8 +190,9 @@ export const ChameleonModule = {
         playerName: player.name,
         role,
         wordGrid,
-        word:  role === CHAMELEON_ROLES.AGENT ? word : null,
-        color: CHAMELEON_ROLE_COLORS[role],
+        word:      role === CHAMELEON_ROLES.AGENT ? word : null,
+        color:     CHAMELEON_ROLE_COLORS[role],
+        category:  categoryLabel,
       };
     });
   },

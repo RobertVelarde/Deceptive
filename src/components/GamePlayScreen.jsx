@@ -374,11 +374,6 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
               </div>
             )}
 
-            {/* Round timer card — only for roles with showsTimer: true */}
-            {shouldShowTimer && (
-              <RoundTimerCard timer={timer} durationSeconds={durationSeconds} />
-            )}
-
             {/* Game-specific supplemental content — delegated to the active module */}
             {myAssignment && module.GameExtras && (
               <module.GameExtras
@@ -393,8 +388,14 @@ export function GamePlayScreen({ state, identity, onNextRound, onBackToLobby }) 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 z-10 bg-gradient-to-t from-[#09090b] to-transparent" />
         </div>
 
+
+        {/* Round timer card — only for roles with showsTimer: true */}
+        {shouldShowTimer && (
+          <RoundTimerCard timer={timer} durationSeconds={durationSeconds} />
+        )}
+
         {/* Nav buttons — always pinned at bottom of card */}
-        <div className="pt-2 border-t border-white/5 flex gap-2 w-full max-w-md">
+        <div className="pt-2 flex gap-2 w-full max-w-md">
           <Button variant="secondary" size="md" className="flex-1 " onClick={handleBackToLobby}>
             ← Pre-Round
           </Button>

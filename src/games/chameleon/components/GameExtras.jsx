@@ -14,6 +14,11 @@ export function ChameleonGameExtras({ assignment, state, roleRevealed, module })
 
   return (
     <GlassCard className="p-4 flex flex-col gap-2">
+      {assignment.category && (
+        <p className="text-xs uppercase tracking-widest text-zinc-400 text-center mb-1">
+          {assignment.category}
+        </p>
+      )}
       <WordGrid
         words={assignment.wordGrid}
         seed={state.startingSeed ?? state.seed}

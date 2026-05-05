@@ -301,9 +301,6 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
                   {categoryPreview && (
                     <>
                       <div className="border-t border-white/5" />
-                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 text-center">
-                        {categoryPreview === CHAMELEON_CUSTOM_CATEGORY ? 'Custom' : categoryPreview}
-                      </p>
                       {previewWords.length ? (
                         <WordGrid words={previewWords} seed={state.startingSeed ?? state.seed} />
                       ) : (
