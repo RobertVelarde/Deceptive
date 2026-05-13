@@ -227,9 +227,9 @@ export const SpyfallModule = {
     const enabled        = state.enabledLocations ?? SPYFALL_LOCATIONS;
     const roundSecs      = state.roundSeconds ?? SPYFALL_ROUND_SECONDS;
     return [
-      { label: 'Round time',            value: `${Math.round(roundSecs / 60)} min` },
+      { label: 'Round time',            value: `${Math.floor(roundSecs / 60)}m ${String(roundSecs % 60).padStart(2, '0')}s` },
       { label: 'Spies',                 value: randomizeSpies ? 'Random' : String(spyCount) },
-      { label: 'Allied Spies', value: spiesKnow ? 'Yes' : 'No' },
+      { label: 'Allied Spies',          value: spiesKnow ? 'YES' : 'NO' },
       { label: 'Locations',             value: `${enabled.length}` },
     ];
   },
