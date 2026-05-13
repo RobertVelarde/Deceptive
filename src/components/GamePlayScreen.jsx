@@ -132,8 +132,8 @@ function RoundTimerCard({ timer, durationSeconds }) {
   const timerRatio  = durationSeconds > 0 ? timer.remaining / durationSeconds : 0;
   const timerColor  = timer.expired
     ? '#EF5350'
-    : timerRatio > 0.5 ? '#4CAF50' : timerRatio > 0.25 ? '#FF9800' : '#EF5350';
-  const displayMins = String(Math.floor(timer.remaining / 60)).padStart(2, '0');
+    : !timer.running ? '#9E9E9E' : timerRatio > 0.5 ? '#4CAF50' : timerRatio > 0.25 ? '#FF9800' : '#EF5350';
+  const displayMins = String(Math.floor(timer.remaining / 60));
   const displaySecs = String(timer.remaining % 60).padStart(2, '0');
   const canEdit     = !timer.running && !timer.expired;
 
@@ -181,8 +181,8 @@ function RoundTimerCard({ timer, durationSeconds }) {
   return (
     <GlassCard className="p-5">
       {/* Header row */}
-      <div className="flex items-center justify-between mb-5 h-4">
-        <span className="text-[10px] uppercase tracking-widest text-zinc-500">Round Timer</span>
+      <div className="flex items-center justify-between h-4 mb-2">
+        <span className="text-xs uppercase tracking-widest text-zinc-400">Round Timer</span>
         {!timer.expired && !editing && (
           <button
             onClick={timer.running ? timer.pause : timer.start}
@@ -200,8 +200,8 @@ function RoundTimerCard({ timer, durationSeconds }) {
       {/* Time display / editor */}
       <div className="flex items-center justify-center">
         {timer.expired ? (
-          <span className="text-5xl font-black tracking-widest select-none" style={{ color: '#EF5350' }}>
-            TIME&apos;S UP
+          <span className="text-5xl font-black tracking-tight select-none" style={{ color: '#EF5350' }}>
+            TIME'S UP
           </span>
         ) : editing ? (
           <div className="flex items-center gap-1">
@@ -223,7 +223,7 @@ function RoundTimerCard({ timer, durationSeconds }) {
               onClick={() => inputRef.current?.focus()}
               tabIndex={-1}
             >
-              <span style={{ color: 'white' }}>{editMM}</span>
+              <span style={{ color: 'white' }}>{parseInt(editMM, 10)}</span>
               <span className="text-zinc-500">:</span>
               <span style={{ color: editSsNum < 60 ? 'white' : '#EF5350' }}>{editSS}</span>
             </button>
@@ -250,11 +250,6 @@ function RoundTimerCard({ timer, durationSeconds }) {
           </button>
         )}
       </div>
-
-      {/* Hint */}
-      <p className="text-center text-[10px] text-zinc-600 mt-3 select-none">
-        {timer.expired ? '\u00a0' : editing ? editHint : canEdit ? 'tap time to edit' : '\u00a0'}
-      </p>
     </GlassCard>
   );
 }
