@@ -36,14 +36,14 @@ export function IdentityPickerModal({ isOpen, players, onPick, cachedPlayer }) {
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
-          {players.map((player) => {
+        <div className="flex flex-wrap gap-1.5">
+          {players.sort((a, b) => a.name.localeCompare(b.name)).map((player) => {
             const isSelected = selected?.id === player.id;
             return (
               <button
                 key={player.id}
                 onClick={() => setSelected(isSelected ? null : player)}
-                className="w-full py-3 px-4 rounded-xl text-base font-semibold text-left transition-all active:scale-95"
+                className="py-3 px-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
                 style={
                   isSelected
                     ? {
@@ -73,7 +73,7 @@ export function IdentityPickerModal({ isOpen, players, onPick, cachedPlayer }) {
               : { backgroundColor: 'rgba(39,39,42,0.4)', color: '#52525b', cursor: 'default' }
           }
         >
-          {selected ? 'Enter lobby' : 'Tap your name above'}
+          {selected ? 'Enter Lobby →' : 'Tap your name above'}
         </button>
       </GlassCard>
     </div>

@@ -65,7 +65,6 @@ export function SpeakingOrderCard({ players, seed, myId, accentColor = '#00695C'
               }}
             >
               <span className="opacity-70">{ordinal(idx + 1)}</span>
-              <span className="opacity-40">·</span>
               <span>{player.name}</span>
             </div>
           );

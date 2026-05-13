@@ -176,7 +176,7 @@ useEffect(() => {
                   {state.startingSeed ?? state.seed}
                 </span>
               </div>
-              <span className="text-[10px] text-zinc-600">Tap to randomize</span>
+              <span className="text-[10px] text-zinc-600">tap to randomize</span>
             </button>
 
             {/* Round Time — hidden for games that don't use a timer */}
@@ -486,15 +486,15 @@ useEffect(() => {
               Add at least {module.minPlayers} players to start
             </p>
           ) : (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {state.players.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-zinc-800/60"
+                  className="flex items-center gap-1.5 py-3 pl-4 pr-3 rounded-xl bg-zinc-800/80"
                 >
-                  <span className="font-medium text-zinc-200 flex-1 truncate text-sm">{p.name}</span>
+                  <span className="font-medium text-zinc-200 text-sm">{p.name}</span>
                   <button
-                    className="text-zinc-600 hover:text-red-400 transition-colors"
+                    className="text-zinc-600 hover:text-red-400 transition-colors text-sm leading-none"
                     onClick={() => removePlayer(p.id)}
                   >✕</button>
                 </div>
@@ -548,7 +548,7 @@ useEffect(() => {
               ? `Add more players`
               : !customTilesFilled
                 ? `Add more tiles`
-                : `Enter Lobby  →`}
+                : `Enter Lobby →`}
           </Button>
         </div>
       )}

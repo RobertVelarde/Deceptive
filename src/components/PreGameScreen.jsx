@@ -24,7 +24,7 @@ const LONG_PRESS_MS = 600;
 /** How long (ms) the "Copied!" confirmation badge stays visible. */
 const COPY_CONFIRM_MS = 2000;
 /** QR code pixel dimensions for the share overlay. */
-const QR_WIDTH_PX = 256;
+const QR_WIDTH_PX = 512;
 const QR_MARGIN_PX = 2;
 
 export function PreGameScreen({ state, identity, onStateChange, onProceed, onBackToLobby, onChangeIdentity, onPrevRound, onNextRound }) {
@@ -115,7 +115,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
                 {identity?.name ?? '—'}
               </span>
               <span className="text-[10px] text-zinc-600">
-                {identity ? 'Hold to change player' : 'Waiting for selection…'}
+                {identity ? 'hold to change player' : 'Waiting for selection…'}
               </span>
             </button>
 
@@ -126,7 +126,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
             >
               <span className="text-[10px] uppercase tracking-widest text-zinc-500">Players</span>
               <span className="text-xl font-bold text-zinc-100">{state.players.length}</span>
-              <span className="text-[10px] text-zinc-600">Tap to see</span>
+              <span className="text-[10px] text-zinc-600">tap to view</span>
             </button>
           </div>
 
@@ -143,7 +143,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
               <span className="text-xl font-mono font-bold tracking-widest text-zinc-100">
                 {state.checksum || '——'}
               </span>
-              <span className="text-[10px] text-zinc-600">Tap to share</span>
+              <span className="text-[10px] text-zinc-600">tap to share</span>
             </button>
 
             {/* Round tile with − / + stepper */}
@@ -174,7 +174,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
             const summary = module.getSettingsSummary?.(state) ?? [];
             const gameSupportsTimer = (module.constants?.ROUND_SECONDS ?? 300) > 0;
             const roundSecs = gameSupportsTimer ? (state.roundSeconds ?? module.constants?.ROUND_SECONDS ?? 300) : 0;
-            const roundTimeBubble = { label: 'Round time', value: `${Math.round(roundSecs / 60)} min` };
+            const roundTimeBubble = { label: 'Round time', value: `${Math.floor(roundSecs / 60)}m ${String(roundSecs % 60).padStart(2, '0')}s` };
             // Inject round time for all games; avoid duplicating Spyfall's existing entry
             const summaryWithoutRoundTime = summary.filter((b) => b.label !== 'Round time');
             const seedBubble = { label: 'Seed', value: state.startingSeed ?? state.seed ?? '????' };
@@ -238,7 +238,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
             onClick={onProceed}
             disabled={!identity}
           >
-            {identity ? 'Start Round' : 'Select your name in lobby first'}
+            {identity ? 'Start Round →' : 'Select your name in lobby first'}
           </Button>
 
         </GlassCard>
@@ -274,7 +274,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
             <Modal
               isOpen={showCategories}
               onClose={() => setShowCategories(false)}
-              title={`Categories (${nonCustom.length + (hasCustom ? 1 : 0)})`}
+              title={`Categories · ${nonCustom.length + (hasCustom ? 1 : 0)}`}
             >
               {listCategories.length === 0 ? (
                 <p className="text-zinc-500 text-sm text-center py-4">No categories enabled</p>
@@ -338,24 +338,30 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
 
         {/* Players list modal */}
         <Modal isOpen={showPlayers} onClose={() => setShowPlayers(false)} title={`Players · ${state.players.length}`}>
-          <div className="flex flex-col gap-2">
-            {state.players.map((p) => (
-              <div
-                key={p.id}
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${p.id === identity?.id
-                    ? 'bg-zinc-700/50 border-white/10'
-                    : 'bg-zinc-800/40 border-white/5'
-                  }`}
-              >
-                <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-300 shrink-0">
-                  {p.name[0]}
+          <div className="flex flex-wrap gap-2">
+            {state.players.map((p) => {
+              const isMe = p.id === identity?.id;
+              return (
+                <div
+                  key={p.id}
+                  className="py-3 px-4 rounded-xl text-base font-semibold transition-all"
+                  style={
+                    isMe
+                      ? {
+                          backgroundColor: `${colors.primary}33`,
+                          boxShadow: `0 0 0 1.5px ${colors.primary}99`,
+                          color: '#fff',
+                        }
+                      : {
+                          backgroundColor: 'rgba(39,39,42,0.8)',
+                          color: '#d4d4d8',
+                        }
+                  }
+                >
+                  {p.name}
                 </div>
-                <span className="text-sm font-medium text-zinc-300 flex-1 truncate">{p.name}</span>
-                {p.id === identity?.id && (
-                  <span className="text-[10px] uppercase tracking-widest text-zinc-500">you</span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Modal>
 
@@ -367,8 +373,8 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
                 src={qrDataUrl}
                 alt="Lobby QR code"
                 className="rounded-2xl"
-                width={256}
-                height={256}
+                width={512}
+                height={512}
               />
             )}
             <button
@@ -385,21 +391,23 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
           <div className="flex flex-col gap-5">
             <p className="text-sm text-zinc-300 leading-relaxed">
               It is not usually necessary to edit the lobby after a game has started.
-              Only proceed if you are the <span className="text-white font-semibold">host</span>.
+              Doing so will generate an entirely new lobby that <span className="text-white font-semibold">will not be connected</span> to the current game.
+              <br /><br />
+                Only proceed if you are the <span className="text-white font-semibold">host</span>.
             </p>
             <div className="flex gap-3">
               <button
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
-                onClick={() => setEditLobbyWarn(false)}
+                onClick={() => { setEditLobbyWarn(false); onBackToLobby(); }}
               >
-                Cancel
+                ← Edit Lobby
               </button>
               <button
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
                 style={{ backgroundColor: colors.primary }}
-                onClick={() => { setEditLobbyWarn(false); onBackToLobby(); }}
+                onClick={() => setEditLobbyWarn(false)}
               >
-                Edit Lobby
+                Cancel
               </button>
             </div>
           </div>
