@@ -35,19 +35,25 @@ function readPersistedState(storageKey, durationSeconds, autoStart) {
         const data = JSON.parse(raw);
 
         // Running state: recompute remaining from absolute deadline
+        // Persisted expired marker — timer ran out while the page was closed
+        if (data?.expired === true) {
+          return { remaining: 0, running: false, deadline: null, expired: true };
+        }
+
         if (typeof data?.deadline === 'number') {
           const remaining = Math.max(0, Math.floor((data.deadline - Date.now()) / 1000));
           if (remaining > 0) {
-            return { remaining, running: true, deadline: data.deadline };
+            return { remaining, running: true, deadline: data.deadline, expired: false };
           }
-          // Deadline has already passed — clean up and surface the expired state
-          localStorage.removeItem(storageKey);
-          return { remaining: 0, running: false, deadline: null };
+          // Deadline has already passed — write the expired marker so subsequent
+          // refreshes also surface "Time's Up" until the user resets the round.
+          localStorage.setItem(storageKey, JSON.stringify({ expired: true }));
+          return { remaining: 0, running: false, deadline: null, expired: true };
         }
 
         // Paused state: use stored remaining directly
         if (typeof data?.remaining === 'number' && data.remaining > 0) {
-          return { remaining: data.remaining, running: false, deadline: null };
+          return { remaining: data.remaining, running: false, deadline: null, expired: false };
         }
       }
     } catch {
@@ -98,6 +104,7 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
 
   const [remaining, setRemaining] = useState(initRef.current.remaining);
   const [running,   setRunning]   = useState(initRef.current.running);
+  const [expired,   setExpired]   = useState(initRef.current.expired ?? false);
 
   // Deadline lives in a ref so the interval callback always reads the latest
   // value without needing to be re-created on every state change.
@@ -109,17 +116,20 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
     try {
       if (running && deadlineRef.current) {
         localStorage.setItem(storageKey, JSON.stringify({ deadline: deadlineRef.current }));
+      } else if (expired) {
+        // Keep the expired marker so subsequent refreshes still show "Time's Up"
+        localStorage.setItem(storageKey, JSON.stringify({ expired: true }));
       } else if (!running && remaining > 0) {
         // Paused mid-countdown: store remaining so resume works after a reload
         localStorage.setItem(storageKey, JSON.stringify({ remaining }));
       } else {
-        // Expired or not yet started with default duration — nothing useful to persist
+        // Not yet started with default duration — nothing useful to persist
         localStorage.removeItem(storageKey);
       }
     } catch {
       // Storage unavailable (private browsing quota exceeded, etc.) — degrade gracefully
     }
-  }, [running, remaining, storageKey]);
+  }, [running, remaining, expired, storageKey]);
 
   // ── Drift-resistant countdown tick ─────────────────────────────────────────
   // The interval fires every second but derives `remaining` from the deadline
@@ -133,9 +143,11 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
       setRemaining(rem);
       if (rem <= 0) {
         setRunning(false);
+        setExpired(true);
         deadlineRef.current = null;
         if (storageKey) {
-          try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+          // Write the expired marker — persist effect will also maintain it
+          try { localStorage.setItem(storageKey, JSON.stringify({ expired: true })); } catch { /* ignore */ }
         }
       }
     }, 1000);
@@ -152,6 +164,7 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
     deadlineRef.current = next.deadline;
     setRemaining(next.remaining);
     setRunning(next.running);
+    setExpired(next.expired ?? false);
   }, [storageKey, durationSeconds, autoStart]);
 
   // ── Controls ────────────────────────────────────────────────────────────────
@@ -170,6 +183,7 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
   const reset = useCallback(() => {
     deadlineRef.current = null;
     setRunning(false);
+    setExpired(false);
     setRemaining(durationSeconds);
     if (storageKey) {
       try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
@@ -196,7 +210,7 @@ export function usePersistentTimer({ durationSeconds, storageKey, autoStart = tr
   return {
     remaining,
     running,
-    expired: remaining <= 0,
+    expired,
     start,
     pause,
     reset,
