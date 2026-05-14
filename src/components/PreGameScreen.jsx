@@ -318,7 +318,7 @@ export function PreGameScreen({ state, identity, onStateChange, onProceed, onBac
         <Modal
           isOpen={showLocations}
           onClose={() => setShowLocations(false)}
-          title={`Locations (${(state.enabledLocations ?? []).length})`}
+          title={`Locations · ${(state.enabledLocations ?? []).length}`}
         >
           {(state.enabledLocations ?? []).length === 0 ? (
             <p className="text-zinc-500 text-sm text-center py-4">No locations enabled</p>
