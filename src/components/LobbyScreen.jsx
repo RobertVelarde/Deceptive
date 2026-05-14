@@ -264,7 +264,7 @@ useEffect(() => {
                   </button>
                 </div>
 
-                {/* Custom: expanding tile list */}
+                {/* Custom: 4×4 tile grid */}
                 {isCustomChameleon && (() => {
                   const addTile = () => {
                     const name = sanitizeName(newTile).trim();
@@ -287,21 +287,37 @@ useEffect(() => {
                         </span>
                       </div>
 
-                      {customWords.length === 0 ? (
-                        <p className="text-zinc-600 text-xs text-center py-2">Add 16 custom tile names</p>
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {customWords.map((w, i) => (
-                            <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-zinc-800/60">
-                              <span className="font-medium text-zinc-200 flex-1 truncate text-sm uppercase tracking-wide">{w}</span>
+                      {/* 4×4 grid — 16 slots always visible, styled to match in-game WordGrid */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {Array.from({ length: 16 }, (_, i) => {
+                          const word   = customWords[i];
+                          const filled = word !== undefined;
+                          const isNext = !filled && i === customWords.length;
+                          return filled ? (
+                            <div
+                              key={i}
+                              className="relative rounded-lg px-1 py-2 text-center text-[10px] font-bold leading-tight flex items-center justify-center min-h-[50px] bg-zinc-800/60 text-zinc-400 border border-white/5 overflow-hidden"
+                            >
+                              <span className="text-center leading-tight">{word}</span>
                               <button
-                                className="text-zinc-600 hover:text-red-400 transition-colors"
+                                className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-zinc-900/80 text-zinc-600 hover:text-red-400 active:scale-90 transition-colors text-[8px] leading-none"
                                 onClick={() => removeTile(i)}
                               >✕</button>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ) : (
+                            <div
+                              key={i}
+                              className={`rounded-lg px-1 py-2 flex items-center justify-center min-h-[50px] border ${
+                                isNext
+                                  ? 'border-dashed border-zinc-500/40 bg-zinc-800/30'
+                                  : 'border-dashed border-zinc-800/60 bg-zinc-800/10'
+                              }`}
+                            >
+                              {isNext && <span className="text-zinc-600 text-sm leading-none">+</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
 
                       {customWords.length < 16 && (
                         <div className="flex gap-2">
@@ -416,11 +432,16 @@ useEffect(() => {
           {module.settingsSchema?.length > 0 && (
             <div className="flex flex-col gap-1.5">
               {module.settingsSchema.map((entry) => {
-                const value = state[entry.key] ?? entry.default;
+                const value      = state[entry.key] ?? entry.default;
+                const isDisabled = typeof entry.disabled === 'function' ? entry.disabled(state) : false;
 
                 if (entry.type === 'segmented') {
                   return (
-                    <div key={entry.key} className="flex items-center justify-between px-3 py-2.5 rounded-2xl bg-zinc-800/60">
+                    <div
+                      key={entry.key}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-2xl bg-zinc-800/60"
+                      style={isDisabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
+                    >
                       <span className="text-sm text-zinc-300">{entry.label}</span>
                       <div className="flex gap-0.5 bg-zinc-700/60 rounded-xl p-0.5">
                         {entry.options.map((opt) => (
@@ -443,13 +464,17 @@ useEffect(() => {
 
                 if (entry.type === 'stepper') {
                   return (
-                    <div key={entry.key} className="flex items-center justify-between px-3 py-2.5 rounded-2xl bg-zinc-800/60">
+                    <div
+                      key={entry.key}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-2xl bg-zinc-800/60"
+                      style={isDisabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
+                    >
                       <span className="text-sm text-zinc-300">{entry.label}</span>
                       <div className="flex items-center gap-2">
                         <button
                           className="w-7 h-7 rounded-lg bg-zinc-700 text-zinc-300 text-sm font-bold hover:bg-zinc-600 disabled:opacity-30 transition-colors"
                           onClick={() => push({ [entry.key]: Math.max(entry.min, value - entry.step) })}
-                          disabled={value <= entry.min}
+                          disabled={isDisabled || value <= entry.min}
                         >−</button>
                         <span className="w-14 text-center text-sm font-mono font-bold text-zinc-200">
                           {entry.format ? entry.format(value) : value}
@@ -457,7 +482,7 @@ useEffect(() => {
                         <button
                           className="w-7 h-7 rounded-lg bg-zinc-700 text-zinc-300 text-sm font-bold hover:bg-zinc-600 disabled:opacity-30 transition-colors"
                           onClick={() => push({ [entry.key]: Math.min(entry.max, value + entry.step) })}
-                          disabled={value >= entry.max}
+                          disabled={isDisabled || value >= entry.max}
                         >+</button>
                       </div>
                     </div>

@@ -20,7 +20,8 @@ import {
   SPYFALL_ROUND_SECONDS,
   SPYFALL_ROLE_META,
 } from './constants';
-import { SpyfallGameExtras } from './components/GameExtras';
+import { SpyfallGameExtras }       from './components/GameExtras';
+import { SpyfallTimerCompanion }   from './components/TimerCompanion';
 
 export const SpyfallModule = {
   name:        'spyfall',
@@ -58,6 +59,9 @@ export const SpyfallModule = {
 
   /** Location reference list rendered below the role card. */
   GameExtras: SpyfallGameExtras,
+
+  /** Speaking order strip rendered beside the round timer. */
+  TimerCompanion: SpyfallTimerCompanion,
 
   // ── Compact binary state encoding (for ?gs= URL param) ────────────────────
   //

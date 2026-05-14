@@ -14,6 +14,7 @@
 import { createPRNG, deterministicShuffle } from '../../engine/prng';
 import { encodeSeed, decodeSeed, encodePlayers, decodePlayers } from '../../engine/gamestate';
 import { INSIDER_WORDS } from './words';
+import { InsiderTimerCompanion } from './components/TimerCompanion';
 import {
   INSIDER_COLORS,
   INSIDER_ROLES,
@@ -27,6 +28,7 @@ export const InsiderModule = {
   displayName: 'Insider',
   minPlayers:  4,
   maxPlayers:  8,
+  timerInBody: true,
 
   constants: {
     COLORS:        INSIDER_COLORS,
@@ -39,15 +41,19 @@ export const InsiderModule = {
   /** Default game-type-specific state fields for new lobbies. */
   defaultState() {
     return {
-      rotatingMaster:        false,
-      roundSeconds:          300,
+      rotatingMaster:         true,
+      roundSeconds:           300,
       possibilityOfNoInsider: false,
+      answerTracking:         false,
+      answerLimit:            false,
+      answerLimitCount:       36,
     };
   },
 
   /**
    * Settings schema consumed by LobbyScreen to render generic controls.
    * type 'segmented' → pill-style toggle; type 'stepper' → − value + control.
+   * disabled(state) → boolean — when true, the row is shown but non-interactive.
    */
   settingsSchema: [
     {
@@ -69,6 +75,37 @@ export const InsiderModule = {
         { value: false, label: 'Always' },
         { value: true,  label: 'Maybe' },
       ],
+    },
+    {
+      type:    'segmented',
+      key:     'answerTracking',
+      label:   'Track Answers',
+      default: false,
+      options: [
+        { value: false, label: 'Off' },
+        { value: true,  label: 'On' },
+      ],
+    },
+    {
+      type:     'segmented',
+      key:      'answerLimit',
+      label:    'Yes/No Limit',
+      default:  false,
+      disabled: (state) => !(state.answerTracking ?? false),
+      options:  [
+        { value: false, label: 'Off' },
+        { value: true,  label: 'On' },
+      ],
+    },
+    {
+      type:     'stepper',
+      key:      'answerLimitCount',
+      label:    'Limit Number',
+      default:  10,
+      min:      1,
+      max:      50,
+      step:     1,
+      disabled: (state) => !(state.answerTracking ?? false) || !(state.answerLimit ?? false),
     },
   ],
 
@@ -171,6 +208,9 @@ export const InsiderModule = {
   /** Insider has no supplemental game UI below the role card. */
   GameExtras: null,
 
+  /** Answer-tally strip rendered beside the round timer. */
+  TimerCompanion: InsiderTimerCompanion,
+
   /** Returns timer seconds for the current round. */
   getTimerSeconds(state) {
     return state?.roundSeconds ?? INSIDER_ROUND_SECONDS;
@@ -180,9 +220,16 @@ export const InsiderModule = {
   getSettingsSummary(state) {
     const rotatingMaster         = state?.rotatingMaster         ?? false;
     const possibilityOfNoInsider = state?.possibilityOfNoInsider ?? false;
-    return [
+    const answerTracking         = state?.answerTracking         ?? false;
+    const answerLimit            = state?.answerLimit            ?? false;
+    const answerLimitCount       = state?.answerLimitCount       ?? 10;
+    const summary = [
       { label: 'Master',  value: rotatingMaster ? 'Rotating' : 'Random' },
       { label: 'Insider', value: possibilityOfNoInsider ? 'Maybe' : 'Always' },
     ];
+    if (answerTracking) {
+      summary.push({ label: 'Yes/No Limit', value: answerLimit ? String(answerLimitCount) : 'Off' });
+    }
+    return summary;
   },
 };
