@@ -46,10 +46,10 @@ describe('calculateChecksum', () => {
       .not.toBe(calculateChecksum({ ...BASE_STATE, startingSeed: 'ZZZZ' }));
   });
 
-  it('is insensitive to player array order (sorted internally)', () => {
+  it('is sensitive to player array order (order is preserved)', () => {
     const s1 = { ...BASE_STATE, players: [{ id: 'a', name: 'ALICE' }, { id: 'b', name: 'BOB' }] };
     const s2 = { ...BASE_STATE, players: [{ id: 'b', name: 'BOB' }, { id: 'a', name: 'ALICE' }] };
-    expect(calculateChecksum(s1)).toBe(calculateChecksum(s2));
+    expect(calculateChecksum(s1)).not.toBe(calculateChecksum(s2));
   });
 
   it('is insensitive to runtime-only fields (status, round, seed, checksum)', () => {

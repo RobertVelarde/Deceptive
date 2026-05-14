@@ -22,7 +22,7 @@ export function calculateChecksum(state) {
   }
   const payload = JSON.stringify({
     v:            ENVELOPE_VERSION,
-    players:      state.players.map((p) => p.name).sort(),
+    players:      state.players.map((p) => p.name), // player IDs are not stable across sessions, but names are (and order is preserved)
     gameType:     state.gameType,
     category:     state.category ?? '',
     startingSeed: state.startingSeed ?? '',

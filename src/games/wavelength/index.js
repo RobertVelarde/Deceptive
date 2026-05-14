@@ -90,6 +90,8 @@ export const WavelengthModule = {
     const round        = state.round ?? 1;
     const guesserIndex = (round - 1) % players.length;
 
+    const guesserName = players[guesserIndex]?.name ?? null;
+
     return players.map((player, i) => {
       const isGuesser = i === guesserIndex;
       const role      = isGuesser ? WAVELENGTH_ROLES.GUESSER : WAVELENGTH_ROLES.PSYCHIC;
@@ -101,6 +103,7 @@ export const WavelengthModule = {
         secretNumber: isGuesser ? null : secretNumber,  // guesser does not know the number
         revealNumber: isGuesser ? secretNumber : null,  // revealed to guesser only after submission
         color:        WAVELENGTH_ROLE_COLORS[role],
+        guesserName,
       };
     });
   },

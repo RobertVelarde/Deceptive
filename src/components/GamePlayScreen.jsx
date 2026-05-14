@@ -82,8 +82,11 @@ function RoleCard({ assignment, module, state }) {
       style={{ borderColor: roleColor + '55', background: roleColor + '12' }}
     >
       <div className="flex items-center justify-start gap-2">
+      <span className="text-white uppercase text-xs font-semibold">
+        You
+      </span>
       <span className="text-zinc-400 text-xs uppercase tracking-widest">
-        You are the
+        are the
       </span>
       <Badge label={meta.label} color={roleColor} />
       </div>

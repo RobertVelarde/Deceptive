@@ -15,6 +15,7 @@ import { createPRNG, deterministicShuffle } from '../../engine/prng';
 import { encodeSeed, decodeSeed, encodePlayers, decodePlayers } from '../../engine/gamestate';
 import { INSIDER_WORDS } from './words';
 import { InsiderTimerCompanion } from './components/TimerCompanion';
+import { InsiderGameExtras } from './components/GameExtras';
 import {
   INSIDER_COLORS,
   INSIDER_ROLES,
@@ -195,18 +196,20 @@ export const InsiderModule = {
       else                                          role = INSIDER_ROLES.COMMON;
 
       const seesWord = role === INSIDER_ROLES.MASTER || role === INSIDER_ROLES.INSIDER;
+      const masterPlayer = players.find((p) => p.id === masterId);
       return {
         playerId:   player.id,
         playerName: player.name,
         role,
         word:  seesWord ? word : null,
         color: INSIDER_ROLE_COLORS[role],
+        masterName: masterPlayer?.name ?? null,
       };
     });
   },
 
-  /** Insider has no supplemental game UI below the role card. */
-  GameExtras: null,
+  /** Slim card listing the current master, shown to non-master players. */
+  GameExtras: InsiderGameExtras,
 
   /** Answer-tally strip rendered beside the round timer. */
   TimerCompanion: InsiderTimerCompanion,
