@@ -37,7 +37,7 @@ export function IdentityPickerModal({ isOpen, players, onPick, cachedPlayer }) {
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {players.sort((a, b) => a.name.localeCompare(b.name)).map((player) => {
+          {[...players].sort((a, b) => a.name.localeCompare(b.name)).map((player) => {
             const isSelected = selected?.id === player.id;
             return (
               <button
