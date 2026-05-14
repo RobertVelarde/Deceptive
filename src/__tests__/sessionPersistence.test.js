@@ -239,6 +239,163 @@ describe('isCreator flag (Creator vs Joiner)', () => {
   });
 });
 
+// ── Screen restoration after page refresh ────────────────────────────────────
+// In App.jsx, every state transition calls:
+//   updateSession({ currentScreen: next.status, lobbyID: checksum })
+// On page load the app checks:
+//   session.lobbyID === checksum && session.currentScreen
+// and restores status to session.currentScreen when the IDs match.
+// These tests verify the persistence layer correctly stores and recalls both
+// fields so the correct screen is restored after a hard refresh.
+describe('Screen restoration after page refresh', () => {
+  it('persists currentScreen="lobby" so a refresh restores the lobby screen', () => {
+    updateSession({ currentScreen: 'lobby', lobbyID: 'ABCD' });
+    expect(readSession()?.currentScreen).toBe('lobby');
+  });
+
+  it('persists currentScreen="pregame" so a refresh restores the pre-round screen', () => {
+    updateSession({ currentScreen: 'pregame', lobbyID: 'ABCD' });
+    expect(readSession()?.currentScreen).toBe('pregame');
+  });
+
+  it('persists currentScreen="playing" so a refresh restores the gameplay screen', () => {
+    updateSession({ currentScreen: 'playing', lobbyID: 'ABCD' });
+    expect(readSession()?.currentScreen).toBe('playing');
+  });
+
+  it('after advancing lobby → pregame → playing, the session holds "playing" not "pregame"', () => {
+    // Each setState call in the app writes both fields together.
+    // After reaching the gameplay screen and refreshing, 'playing' must win.
+    const LOBBY_ID = 'TEST';
+    updateSession({ currentScreen: 'lobby',   lobbyID: LOBBY_ID });
+    updateSession({ currentScreen: 'pregame', lobbyID: LOBBY_ID });
+    updateSession({ currentScreen: 'playing', lobbyID: LOBBY_ID });
+    const session = readSession();
+    expect(session?.currentScreen).toBe('playing'); // not 'pregame'
+    expect(session?.lobbyID).toBe(LOBBY_ID);        // lobby identifier intact
+  });
+
+  it('lobbyID is retained alongside currentScreen at every screen transition', () => {
+    // The app matches session.lobbyID === checksum before restoring the screen.
+    // lobbyID must survive each updateSession call, not just the first one.
+    const CHECKSUM = 'XYZW';
+    updateSession({ currentScreen: 'lobby',   lobbyID: CHECKSUM });
+    expect(readSession()?.lobbyID).toBe(CHECKSUM);
+    updateSession({ currentScreen: 'pregame', lobbyID: CHECKSUM });
+    expect(readSession()?.lobbyID).toBe(CHECKSUM);
+    updateSession({ currentScreen: 'playing', lobbyID: CHECKSUM });
+    expect(readSession()?.lobbyID).toBe(CHECKSUM);
+  });
+
+  it('going home clears the session so no stale screen is restored on the next visit', () => {
+    updateSession({ currentScreen: 'playing', lobbyID: 'ABCD' });
+    clearSession(); // app calls this when status transitions to 'home'
+    expect(readSession()).toBeNull();
+  });
+});
+
+// ── Joining a lobby that does not contain the previously-selected name ────────
+// In App.jsx the identity-resolution effect runs this check:
+//   const match = state.players.find(
+//     (p) => p.id === session.playerId || p.name === session.playerName,
+//   );
+// When no match is found the identity picker is shown so the player can
+// choose a name that actually exists in the new lobby.
+//
+// These tests exercise the session layer's side of that contract:
+//   • the stored identity survives switching lobbies (the session is NOT auto-
+//     cleared on a mismatch — that is App.jsx's responsibility)
+//   • clearIdentityFromSession() is the correct recovery action: it removes
+//     playerName / playerId while preserving the new lobbyID and currentScreen,
+//     so after the player picks a new name the next updateSession() stores their
+//     fresh identity inside the new lobby's session context.
+describe('joining a lobby where the stored player name is absent', () => {
+  // Simulate the player having previously played as 'ALICE' in lobby 'AAAA'
+  const OLD_LOBBY   = 'AAAA';
+  const NEW_LOBBY   = 'BBBB';
+  const OLD_PLAYERS = [
+    { id: 'pid-a', name: 'ALICE' },
+    { id: 'pid-b', name: 'BOB'   },
+  ];
+  const NEW_PLAYERS = [
+    { id: 'pid-c', name: 'CAROL' },
+    { id: 'pid-d', name: 'DAVE'  },
+    { id: 'pid-e', name: 'EVE'   },
+  ];
+
+  it('stored identity is still readable after switching to a new lobby', () => {
+    // Previous session: player was ALICE in lobby AAAA
+    saveSession({ playerName: 'ALICE', playerId: 'pid-a', lobbyID: OLD_LOBBY, currentScreen: 'playing' });
+    // Player now joins lobby BBBB — only the screen/lobby fields are updated
+    updateSession({ lobbyID: NEW_LOBBY, currentScreen: 'pregame' });
+    const session = readSession();
+    // Identity fields must survive the updateSession call
+    expect(session?.playerName).toBe('ALICE');
+    expect(session?.playerId).toBe('pid-a');
+  });
+
+  it('the stored name produces no match against the new lobby player list', () => {
+    saveSession({ playerName: 'ALICE', playerId: 'pid-a', lobbyID: OLD_LOBBY });
+    const session = readSession();
+    const match = NEW_PLAYERS.find(
+      (p) => p.id === session.playerId || p.name === session.playerName,
+    );
+    expect(match).toBeUndefined(); // no ALICE or pid-a in the new lobby
+  });
+
+  it('the stored name finds a match when the player IS in the lobby', () => {
+    saveSession({ playerName: 'ALICE', playerId: 'pid-a', lobbyID: OLD_LOBBY });
+    const session = readSession();
+    const match = OLD_PLAYERS.find(
+      (p) => p.id === session.playerId || p.name === session.playerName,
+    );
+    expect(match).toBeDefined();
+    expect(match.name).toBe('ALICE');
+  });
+
+  it('clearIdentityFromSession() removes the stale name without losing lobbyID or currentScreen', () => {
+    saveSession({ playerName: 'ALICE', playerId: 'pid-a', lobbyID: OLD_LOBBY, currentScreen: 'playing' });
+    updateSession({ lobbyID: NEW_LOBBY, currentScreen: 'pregame' });
+
+    // Player is shown the identity picker; they pick CAROL; the app first clears
+    // the stale identity, then writes the new one.
+    clearIdentityFromSession();
+    const afterClear = readSession();
+    expect(afterClear?.playerName).toBeUndefined(); // ALICE gone
+    expect(afterClear?.playerId).toBeUndefined();   // old pid gone
+    expect(afterClear?.lobbyID).toBe(NEW_LOBBY);    // new lobby preserved
+    expect(afterClear?.currentScreen).toBe('pregame');
+  });
+
+  it('after clearing stale identity, writing the new choice makes it findable in the new lobby', () => {
+    saveSession({ playerName: 'ALICE', playerId: 'pid-a', lobbyID: OLD_LOBBY });
+    updateSession({ lobbyID: NEW_LOBBY, currentScreen: 'pregame' });
+    clearIdentityFromSession();
+
+    // Player picks CAROL from the picker
+    updateSession({ playerName: 'CAROL', playerId: 'pid-c' });
+
+    const session = readSession();
+    const match = NEW_PLAYERS.find(
+      (p) => p.id === session.playerId || p.name === session.playerName,
+    );
+    expect(match).toBeDefined();
+    expect(match.name).toBe('CAROL');
+  });
+
+  it('a name match is name-based so it works even when the stored playerId differs (e.g. cross-device)', () => {
+    // On another device the player was assigned a different ephemeral ID for
+    // the same name.  The app falls back to name matching.
+    saveSession({ playerName: 'CAROL', playerId: 'different-id', lobbyID: NEW_LOBBY });
+    const session = readSession();
+    const match = NEW_PLAYERS.find(
+      (p) => p.id === session.playerId || p.name === session.playerName,
+    );
+    expect(match).toBeDefined();
+    expect(match.name).toBe('CAROL');
+  });
+});
+
 // ── Full round-trip: lobby lifecycle ─────────────────────────────────────────
 describe('full lobby lifecycle round-trip', () => {
   it('simulates create → pregame → playing → home without data leaking', () => {

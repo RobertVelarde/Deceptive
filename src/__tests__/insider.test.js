@@ -351,6 +351,70 @@ describe('InsiderModule.getTimerSeconds()', () => {
     expect(InsiderModule.getTimerSeconds({})).toBe(INSIDER_ROUND_SECONDS));
 });
 
+// ── getSetup — cross-device speaking order ────────────────────────────────
+// When multiple players scan the same QR code, decodePlayers() re-assigns fresh
+// ephemeral IDs on each device while preserving name order.  getSetup() must
+// produce the same assignment-array ordering (by playerName) on every device so
+// that every participant sees an identical speaking order strip.
+describe('InsiderModule.getSetup() cross-device speaking order', () => {
+  const NAMES = ['ALICE', 'BOB', 'CAROL', 'DAVE', 'EVE'];
+  const state = { rotatingMaster: false, possibilityOfNoInsider: false, round: 1 };
+
+  it('assignment order (by playerName) is identical when the same players carry different ephemeral IDs', () => {
+    const seed    = 'AB12';
+    // Two "devices" that decoded the same URL — same names, different fresh IDs
+    const deviceA = NAMES.map((name, i) => ({ id: `a-${i}`, name }));
+    const deviceB = NAMES.map((name, i) => ({ id: `b-${i}`, name }));
+
+    const orderA = InsiderModule.getSetup(deviceA, seed, '', state).map((a) => a.playerName);
+    const orderB = InsiderModule.getSetup(deviceB, seed, '', state).map((a) => a.playerName);
+
+    expect(orderA).toEqual(orderB);
+  });
+
+  it('speaking order is consistent across several different seeds', () => {
+    const seeds = ['0000', 'AB12', 'ZZZZ', '1A2B', 'TEST'];
+    for (const seed of seeds) {
+      const deviceA = NAMES.map((name, i) => ({ id: `a-${i}`, name }));
+      const deviceB = NAMES.map((name, i) => ({ id: `b-${i}`, name }));
+
+      const orderA = InsiderModule.getSetup(deviceA, seed, '', state).map((a) => a.playerName);
+      const orderB = InsiderModule.getSetup(deviceB, seed, '', state).map((a) => a.playerName);
+
+      expect(orderA).toEqual(orderB);
+    }
+  });
+
+  it('every device receives the full player list (no players dropped or duplicated)', () => {
+    const deviceA = NAMES.map((name, i) => ({ id: `a-${i}`, name }));
+    const deviceB = NAMES.map((name, i) => ({ id: `b-${i}`, name }));
+
+    const resultA = InsiderModule.getSetup(deviceA, 'AB12', '', state);
+    const resultB = InsiderModule.getSetup(deviceB, 'AB12', '', state);
+
+    expect(resultA).toHaveLength(NAMES.length);
+    expect(resultB).toHaveLength(NAMES.length);
+    // Each result contains exactly the same set of names
+    expect(resultA.map((a) => a.playerName).sort())
+      .toEqual(resultB.map((a) => a.playerName).sort());
+  });
+
+  it('role assignments (MASTER / INSIDER / COMMON) match across devices for the same seed', () => {
+    const seed    = 'AB12';
+    const deviceA = NAMES.map((name, i) => ({ id: `a-${i}`, name }));
+    const deviceB = NAMES.map((name, i) => ({ id: `b-${i}`, name }));
+
+    const resultA = InsiderModule.getSetup(deviceA, seed, '', state);
+    const resultB = InsiderModule.getSetup(deviceB, seed, '', state);
+
+    // Zip by position: same slot → same role
+    for (let i = 0; i < NAMES.length; i++) {
+      expect(resultA[i].playerName).toBe(resultB[i].playerName);
+      expect(resultA[i].role).toBe(resultB[i].role);
+    }
+  });
+});
+
 // ── getSettingsSummary ─────────────────────────────────────────────────────
 describe('InsiderModule.getSettingsSummary()', () => {
   const state = {

@@ -197,4 +197,28 @@ describe('deterministicShuffle', () => {
   it('handles a single-element array', () => {
     expect(deterministicShuffle([42], createPRNG('SHUF'))).toEqual([42]);
   });
+
+  it('shuffled name order is identical for arrays with the same names in the same positions but different object IDs', () => {
+    // Simulates two devices decoding the same QR code: decodePlayers() assigns
+    // fresh ephemeral IDs on each device while preserving name order.  The
+    // shuffle result must depend only on the PRNG (seed) and the element
+    // positions — never on the identity of the objects being shuffled.
+    const device1 = [
+      { id: 'old-1', name: 'ALICE' },
+      { id: 'old-2', name: 'BOB'   },
+      { id: 'old-3', name: 'CAROL' },
+      { id: 'old-4', name: 'DAVE'  },
+      { id: 'old-5', name: 'EVE'   },
+    ];
+    const device2 = [
+      { id: 'new-1', name: 'ALICE' },
+      { id: 'new-2', name: 'BOB'   },
+      { id: 'new-3', name: 'CAROL' },
+      { id: 'new-4', name: 'DAVE'  },
+      { id: 'new-5', name: 'EVE'   },
+    ];
+    const shuffled1 = deterministicShuffle(device1, createPRNG('AB12'));
+    const shuffled2 = deterministicShuffle(device2, createPRNG('AB12'));
+    expect(shuffled1.map((p) => p.name)).toEqual(shuffled2.map((p) => p.name));
+  });
 });
